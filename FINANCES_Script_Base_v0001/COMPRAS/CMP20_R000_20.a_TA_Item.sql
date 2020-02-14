@@ -1,6 +1,6 @@
 -- //////////////////////////////////////////////////////////////
 -- // DATA BASE:		COMPRAS
--- // MODULE:			ITEMS
+-- // MODULE:			ITEM
 -- // OPERATION:		TABLA
 -- //////////////////////////////////////////////////////////////
 -- // AUTHOR:			AX DE LA ROSA			
@@ -99,8 +99,8 @@ AS
 GO
 
 
-EXECUTE [dbo].[PG_CI_STATUS_ITEM] 0,139,1, 'ACTIVO',			'', 'ACTVO', 10,1
-EXECUTE [dbo].[PG_CI_STATUS_ITEM] 0,139,2, 'INACTIVO',			'', 'INACT', 20,1
+EXECUTE [dbo].[PG_CI_STATUS_ITEM] 0,139,1, 'ACTIVE',			'', 'ACTVE', 10,1
+EXECUTE [dbo].[PG_CI_STATUS_ITEM] 0,139,2, 'INACTIVE',			'', 'INACT', 20,1
 GO
 
 
@@ -172,9 +172,9 @@ AS
 GO
 
 
-EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  0, '(POR DEFINIR)'	,'' , 'XDFNR', 10 , 1
-EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  1, 'PRODUCTO'			,'' , 'PRODC', 10 , 1
-EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  2, 'SERVICIO'			,'' , 'SERVI', 10 , 1
+EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  0, '(TO DEFINE)'		,'' , '2DFNE', 10 , 1
+EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  1, 'PRODUCT'			,'' , 'PRODC', 10 , 1
+EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  2, 'SERVICE'			,'' , 'SERVI', 10 , 1
 GO
 
 -- ////////////////////////////////////////////////////////////////
@@ -241,12 +241,12 @@ AS
 	-- //////////////////////////////////////////////////////////////
 GO
 
-EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  0, '(POR DEFINIR)'	,''	, 'XDFNR', 10 , 1
-EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  1, 'CAPACIDAD'		,''	, 'CAPAC', 10 , 1
-EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  2, 'LONGITUD'		,''	, 'LONGI', 10 , 1
-EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  3, 'PESO'			,''	, 'PESO' , 10 , 1
-EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  4, 'SUPERFICIE'		,''	, 'SUPRF', 10 , 1
-EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  5, 'VOLUMEN'			,''	, 'VOLUM', 10 , 1
+EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  0, '(TO DEFINE)'		,''	, '2DFNE', 10 , 1
+EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  1, 'CAPACITY'		,''	, 'CAPAC', 10 , 1
+EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  2, 'LENGTH'			,''	, 'LENGT', 10 , 1
+EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  3, 'SURFACE'			,''	, 'SRFAC', 10 , 1
+EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  4, 'VOLUME'			,''	, 'VOLUM', 10 , 1
+EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  5, 'WEIGHT'			,''	, 'WEIGH', 10 , 1
 GO
 
 
@@ -327,17 +327,19 @@ AS
 GO
 
 
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  0, '(POR DEFINIR)'	,''		, 'XDFNR', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  1, 'KILOGRAMO'		,'kg'	, 'KILOG', 10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  2, 'LIBRA'			,'lb'	, 'LITRO', 10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'LITRO'			,'L'	, 'LITRO', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  4, 'METRO'			,'m'	, 'METRO', 10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  5, 'GALON'			,'gal'	, 'GALON', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  6, 'ONZA'			,'oz'	, 'ONZA',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'PIEZA'			,''		, 'PIEZA', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'PIE'			,'ft'	, 'PIE',   10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'PULGADA'		,'in'	, 'PLGAD', 10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10, 'SERVICIO'		,''		, 'SERVI', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  0, '(TO DEFINE)'	,''		, '2DFNE', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  1, 'FOOT'			,'ft'	, 'FOOT',  10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  2, 'GALLON'		,'gal'	, 'GALON', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'INCH'			,'in'	, 'INCH',  10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  4, 'KILOGRAM'		,'kg'	, 'KILOG', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  5, 'LITER'			,'L'	, 'LITER', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  6, 'METER'			,'m'	, 'METER', 10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'OUNCE'			,'oz'	, 'OUNCE', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'PIECE'			,''		, 'PIECE', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'POUND'			,'lb'	, 'POUND', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10,'SQUARE FOOT'	,'sqft'	, 'SQFT',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'SQUARE INCH'	,'sqin'	, 'INCH',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10, 'SERVICE'		,''		, 'SERVI', 10 , 1, 0
 GO
 
 
@@ -345,11 +347,11 @@ GO
 -- //					ITEM				 
 -- ////////////////////////////////////////////////////////////////
 
-
 CREATE TABLE [dbo].[ITEM] (
 	[K_ITEM]						[INT] NOT NULL,
-	[D_ITEM]						[VARCHAR](100)	NOT NULL,
+	[D_ITEM]						[VARCHAR](250)	NOT NULL,
 	[O_ITEM]						[INT] NOT NULL,
+	[PART_NUMBER_ITEM]				[VARCHAR](250)	NOT NULL,
 	 -- ============================	
 	[MODEL_ITEM]					[VARCHAR](100)	NOT NULL,
 	[PRICE_ITEM]					[DECIMAL](10,4) NOT NULL,			
@@ -359,9 +361,9 @@ CREATE TABLE [dbo].[ITEM] (
 	[K_UNIT_OF_ITEM]				[INT] NOT NULL,
 	-- ============================	
 	[K_CURRENCY]					[INT] NOT NULL,			
-	[K_SUPPLIER]					[INT] NOT NULL,
 	-- ============================	
-	[QUANTITY_MINIMUM_REQUIERED]	[INT] NOT NULL	
+--	[K_VENDOR]						[INT] NOT NULL,
+--	[QUANTITY]						[INT] NOT NULL	
 ) ON [PRIMARY]
 GO
 
@@ -386,10 +388,10 @@ ALTER TABLE [dbo].[ITEM] ADD
 		REFERENCES [dbo].[UNIT_OF_ITEM] ( [K_UNIT_OF_ITEM] ),
 	CONSTRAINT [FK_CURRENCY_04] 
 		FOREIGN KEY ( [K_CURRENCY] ) 
-		REFERENCES [dbo].[CURRENCY] ( [K_CURRENCY] ),
-	CONSTRAINT [FK_SUPPLIER_05] 
-		FOREIGN KEY ( [K_SUPPLIER] ) 
-		REFERENCES [dbo].[SUPPLIER] ( [K_SUPPLIER] )
+		REFERENCES [dbo].[CURRENCY] ( [K_CURRENCY] )
+--	CONSTRAINT [FK_VENDOR_05] 
+--		FOREIGN KEY ( [K_VENDOR] ) 
+--		REFERENCES [dbo].[VENDOR] ( [K_VENDOR] )
 GO
 
 -- //////////////////////////////////////////////////////

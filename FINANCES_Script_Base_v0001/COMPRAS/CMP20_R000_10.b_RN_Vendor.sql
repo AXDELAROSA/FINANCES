@@ -1,6 +1,6 @@
 -- //////////////////////////////////////////////////////////////
 -- // DATA BASE:		COMPRAS
--- // MODULE:			COMPRAS
+-- // MODULE:			VENDOR
 -- // OPERATION:		REGLAS DE NEGOCIO
 -- //////////////////////////////////////////////////////////////
 -- // AUTHOR:			AX DE LA ROSA			
@@ -29,7 +29,7 @@ CREATE PROCEDURE [dbo].[PG_RN_VENDOR_UNIQUE]
 	-- ===========================		
 	@PP_K_VENDOR						[INT],	
 	@PP_D_VENDOR						[VARCHAR] (100),
-	@PP_RFC_VENDOR					[VARCHAR] (100),
+	@PP_RFC_VENDOR						[VARCHAR] (100),
 		-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
