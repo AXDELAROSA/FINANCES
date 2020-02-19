@@ -31,8 +31,8 @@ GO
 
 CREATE TABLE [dbo].[ADDRESS_GEO] (
 	[K_ADDRESS_GEO]				[INT] NOT NULL,			
-	[D_ADDRESS_GEO_1]			[VARCHAR](255) NOT NULL,
-	[D_ADDRESS_GEO_2]			[VARCHAR](255) NOT NULL,
+	[D_ADDRESS_GEO_1]			[VARCHAR](255) NOT NULL,	--street
+	[D_ADDRESS_GEO_2]			[VARCHAR](255) NOT NULL,	--colony, fracc, 
 	[C_ADDRESS_GEO]				[VARCHAR](255) NOT NULL,
 	[O_ADDRESS_GEO]				[INT] NOT NULL,
 	-- ============================

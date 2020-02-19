@@ -23,7 +23,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_
 	DROP PROCEDURE [dbo].[PG_LI_VENDOR]
 GO
 
--- EXECUTE [dbo].[PG_LI_VENDOR] 0,139,'',-1,-1,-1
+-- EXECUTE [dbo].[PG_LI_VENDOR] 0,139,'',-1,-1	,-1
 CREATE PROCEDURE [dbo].[PG_LI_VENDOR]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -44,8 +44,8 @@ AS
 	
 	DECLARE @VP_K_FOLIO				INT
 
-	EXECUTE [COT19_Cotizaciones_V9999_R0].DBO.[PG_RN_OBTENER_ID_X_REFERENCIA]			
-												@PP_BUSCAR,	@OU_K_ELEMENTO = @VP_K_FOLIO	OUTPUT
+	EXECUTE [BD_GENERAL].DBO.[PG_RN_OBTENER_ID_X_REFERENCIA]			
+											@PP_BUSCAR,	@OU_K_ELEMENTO = @VP_K_FOLIO	OUTPUT
 	-- =========================================
 		
 	IF @VP_MENSAJE<>''
@@ -95,7 +95,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_
 	DROP PROCEDURE [dbo].[PG_SK_VENDOR]
 GO
 
--- EXECUTE [dbo].[PG_SK_VENDOR] 0,139,379
+-- EXECUTE [dbo].[PG_SK_VENDOR] 0,139,300
 CREATE PROCEDURE [dbo].[PG_SK_VENDOR]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -168,9 +168,9 @@ AS
 	-- /////////////////////////////////////////////////////////////////////
 	DECLARE @VP_K_VENDOR			INT = 0
 
-		EXECUTE [DATA_02Pruebas].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
-																	'VENDOR', 'K_VENDOR',
-													@OU_K_TABLA_DISPONIBLE = @VP_K_VENDOR	OUTPUT
+		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
+																'VENDOR', 'K_VENDOR',
+																@OU_K_TABLA_DISPONIBLE = @VP_K_VENDOR	OUTPUT
 
 	
 	-- /////////////////////////////////////////////////////////////////////

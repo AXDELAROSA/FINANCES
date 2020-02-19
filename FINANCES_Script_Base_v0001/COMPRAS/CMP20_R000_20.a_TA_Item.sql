@@ -26,6 +26,10 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UNIT_O
 	DROP TABLE [dbo].[UNIT_OF_ITEM]
 GO
 
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UNIT_CLASS]') AND type in (N'U'))
+	DROP TABLE [dbo].[UNIT_CLASS]
+GO
+
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TYPE_ITEM]') AND type in (N'U'))
 	DROP TABLE [dbo].[TYPE_ITEM]
 GO
@@ -338,8 +342,8 @@ EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'OUNCE'			,'oz'	, 'OUNCE', 10 , 
 EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'PIECE'			,''		, 'PIECE', 10 , 1, 0
 EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'POUND'			,'lb'	, 'POUND', 10 , 1, 5
 EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10,'SQUARE FOOT'	,'sqft'	, 'SQFT',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'SQUARE INCH'	,'sqin'	, 'INCH',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10, 'SERVICE'		,''		, 'SERVI', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  11, 'SQUARE INCH'	,'sqin'	, 'INCH',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  12, 'SERVICE'		,''		, 'SERVI', 10 , 1, 0
 GO
 
 
@@ -348,13 +352,16 @@ GO
 -- ////////////////////////////////////////////////////////////////
 
 CREATE TABLE [dbo].[ITEM] (
-	[K_ITEM]						[INT] NOT NULL,
+	[K_ITEM]						[INT] NOT NULL,								
 	[D_ITEM]						[VARCHAR](250)	NOT NULL,
-	[O_ITEM]						[INT] NOT NULL,
-	[PART_NUMBER_ITEM]				[VARCHAR](250)	NOT NULL,
+	[O_ITEM]						[INT] NOT NULL DEFAULT 10,
 	 -- ============================	
-	[MODEL_ITEM]					[VARCHAR](100)	NOT NULL,
-	[PRICE_ITEM]					[DECIMAL](10,4) NOT NULL,			
+	[PART_NUMBER_ITEM_VENDOR]		[VARCHAR](250)	NOT NULL DEFAULT '0',
+	[PART_NUMBER_ITEM_PEARL]		[VARCHAR](250)	NOT NULL DEFAULT '0',
+	 -- ============================	
+	[TRADEMARK_ITEM]				[VARCHAR](100)	NOT NULL DEFAULT '',
+	[MODEL_ITEM]					[VARCHAR](100)	NOT NULL DEFAULT '',
+	[PRICE_ITEM]					[DECIMAL](10,4) NOT NULL DEFAULT 0,			
 	-- ============================	
 	[K_STATUS_ITEM]					[INT] NOT NULL,			
 	[K_TYPE_ITEM]					[INT] NOT NULL,
@@ -385,10 +392,10 @@ ALTER TABLE [dbo].[ITEM] ADD
 		REFERENCES [dbo].[TYPE_ITEM] ( [K_TYPE_ITEM] ),
 	CONSTRAINT [FK_UNIT_OF_ITEM_03] 
 		FOREIGN KEY ( [K_UNIT_OF_ITEM] ) 
-		REFERENCES [dbo].[UNIT_OF_ITEM] ( [K_UNIT_OF_ITEM] ),
-	CONSTRAINT [FK_CURRENCY_04] 
-		FOREIGN KEY ( [K_CURRENCY] ) 
-		REFERENCES [dbo].[CURRENCY] ( [K_CURRENCY] )
+		REFERENCES [dbo].[UNIT_OF_ITEM] ( [K_UNIT_OF_ITEM] )
+--	CONSTRAINT [FK_CURRENCY_04] 
+--		FOREIGN KEY ( [K_CURRENCY] ) 
+--		REFERENCES [dbo].[CURRENCY] ( [K_CURRENCY] )
 --	CONSTRAINT [FK_VENDOR_05] 
 --		FOREIGN KEY ( [K_VENDOR] ) 
 --		REFERENCES [dbo].[VENDOR] ( [K_VENDOR] )

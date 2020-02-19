@@ -1,10 +1,10 @@
 -- //////////////////////////////////////////////////////////////
 -- // DATA BASE:		COMPRAS
--- // MODULE:			COMPRAS
+-- // MODULE:			ITEM
 -- // OPERATION:		REGLAS DE NEGOCIO
 -- //////////////////////////////////////////////////////////////
 -- // AUTHOR:			AX DE LA ROSA			
--- // CREATION DATE:	20200206
+-- // CREATION DATE:	20200217
 -- ////////////////////////////////////////////////////////////// 
 
 USE [COMPRAS]
@@ -18,18 +18,17 @@ GO
 -- //////////////////////////////////////////////////////////////
 
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_SUPPLIER_UNIQUE]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_RN_SUPPLIER_UNIQUE]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_ITEM_UNIQUE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_ITEM_UNIQUE]
 GO
 
 
-CREATE PROCEDURE [dbo].[PG_RN_SUPPLIER_UNIQUE]
+CREATE PROCEDURE [dbo].[PG_RN_ITEM_UNIQUE]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_SUPPLIER						[INT],	
-	@PP_D_SUPPLIER						[VARCHAR] (100),
-	@PP_RFC_SUPPLIER					[VARCHAR] (100),
+	@PP_K_ITEM							[INT],	
+	@PP_D_ITEM							[VARCHAR] (100),
 		-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
@@ -40,43 +39,21 @@ AS
 	IF @VP_RESULTADO=''
 		BEGIN
 	
-		DECLARE @VP_N_SUPPLIER_X_D_SUPPLIER		INT
+		DECLARE @VP_N_ITEM_X_D_ITEM		INT
 		
-		SELECT	@VP_N_SUPPLIER_X_D_SUPPLIER =		COUNT	(SUPPLIER.K_SUPPLIER)
-													FROM	SUPPLIER
-													WHERE	SUPPLIER.K_SUPPLIER<>@PP_K_SUPPLIER
-													AND		SUPPLIER.D_SUPPLIER=@PP_D_SUPPLIER										
+		SELECT	@VP_N_ITEM_X_D_ITEM =		COUNT	(ITEM.K_ITEM)
+													FROM	ITEM
+													WHERE	ITEM.K_ITEM<>@PP_K_ITEM
+													AND		ITEM.D_ITEM=@PP_D_ITEM										
 		-- =============================
 
 		IF @VP_RESULTADO=''
-			IF @VP_N_SUPPLIER_X_D_SUPPLIER>0
-				SET @VP_RESULTADO =  'There are already [SUPPLIERS] with that Description ['+@PP_D_SUPPLIER+'].' 
+			IF @VP_N_ITEM_X_D_ITEM>0
+				SET @VP_RESULTADO =  'There are already [ITEMS] with that Description ['+@PP_D_ITEM+'].' 
 		END	
 		
 	-- ///////////////////////////////////////////
-	
-	IF @VP_RESULTADO=''
-		BEGIN
-	
-		DECLARE @VP_N_SUPPLIER_X_RFC_SUPPLIER		INT = 0
-
-		IF @PP_RFC_SUPPLIER=''			-- SOLAMENTE APLICA LA VALIDACION CUANDO EL RFC_SUPPLIER NO VIENE VACIO 
-			SET		@VP_N_SUPPLIER_X_RFC_SUPPLIER =		0
-		ELSE
-			SELECT	@VP_N_SUPPLIER_X_RFC_SUPPLIER =		COUNT	(SUPPLIER.K_SUPPLIER)
-												FROM	SUPPLIER
-												WHERE	SUPPLIER.K_SUPPLIER<>@PP_K_SUPPLIER
-												AND		SUPPLIER.RFC_SUPPLIER=@PP_RFC_SUPPLIER	
-												AND		@PP_RFC_SUPPLIER<>''				
-		-- =============================
-
-		IF @VP_RESULTADO=''
-			IF @VP_N_SUPPLIER_X_RFC_SUPPLIER>0
-				SET @VP_RESULTADO =  'There are already [SUPPLIERS] with that RFC ['+@PP_RFC_SUPPLIER+'].' 
-		END	
 		
-	-- ///////////////////////////////////////////
-	
 	IF	@VP_RESULTADO<>''
 		SET	@VP_RESULTADO = @VP_RESULTADO + ' //UNI//'
 	
@@ -93,15 +70,15 @@ GO
 -- // STORED PROCEDURE ---> RN_BORRABLE
 -- //////////////////////////////////////////////////////////////
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_SUPPLIER_ITS_DELETEABLE]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_RN_SUPPLIER_ITS_DELETEABLE]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_ITEM_ITS_DELETEABLE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_ITEM_ITS_DELETEABLE]
 GO
 
-CREATE PROCEDURE [dbo].[PG_RN_SUPPLIER_ITS_DELETEABLE]
+CREATE PROCEDURE [dbo].[PG_RN_ITEM_ITS_DELETEABLE]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_SUPPLIER						[INT],
+	@PP_K_ITEM						[INT],
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
@@ -110,18 +87,18 @@ AS
 		
 -- /////////////////////////////////////////////////////
 
-	DECLARE @VP_N_FACTURA_X_SUPPLIER		INT = 0
+	DECLARE @VP_N_FACTURA_X_ITEM		INT = 0
 /*
 	-- ADR: FALTA AGREGAR EL CODIGO QUE VALIDE ESTE CASO.
-	SELECT	@VP_N_FACTURA_X_SUPPLIER =		COUNT	(SUPPLIER.K_SUPPLIER)
-											FROM	SUPPLIER,FACTURA
-											WHERE	PLANTA.K_SUPPLIER=SUPPLIER.K_SUPPLIER	
-											AND		SUPPLIER.K_SUPPLIER=@PP_K_SUPPLIER										
+	SELECT	@VP_N_FACTURA_X_ITEM =		COUNT	(ITEM.K_ITEM)
+											FROM	ITEM,FACTURA
+											WHERE	PLANTA.K_ITEM=ITEM.K_ITEM	
+											AND		ITEM.K_ITEM=@PP_K_ITEM										
 */
 	-- =============================
 
 	IF @VP_RESULTADO=''
-		IF @VP_N_FACTURA_X_SUPPLIER>0
+		IF @VP_N_FACTURA_X_ITEM>0
 			SET @VP_RESULTADO =  'There are [INVOICE] assigned.' 
 		
 	-- /////////////////////////////////////////////////////
@@ -136,16 +113,16 @@ GO
 -- // STORED PROCEDURE ---> RN_EXISTS
 -- //////////////////////////////////////////////////////////////
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_SUPPLIER_EXISTS]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_RN_SUPPLIER_EXISTS]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_ITEM_EXISTS]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_ITEM_EXISTS]
 GO
 
 
-CREATE PROCEDURE [dbo].[PG_RN_SUPPLIER_EXISTS]
+CREATE PROCEDURE [dbo].[PG_RN_ITEM_EXISTS]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_SUPPLIER						[INT],
+	@PP_K_ITEM							[INT],
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
@@ -154,24 +131,24 @@ AS
 		
 	-- /////////////////////////////////////////////////////
 
-	DECLARE @VP_K_SUPPLIER			INT
+	DECLARE @VP_K_ITEM				INT
 	DECLARE @VP_L_BORRADO			INT
 		
-	SELECT	@VP_K_SUPPLIER =		SUPPLIER.K_SUPPLIER,
-			@VP_L_BORRADO	=		SUPPLIER.L_BORRADO
-									FROM	SUPPLIER
-									WHERE	SUPPLIER.K_SUPPLIER=@PP_K_SUPPLIER										
+	SELECT	@VP_K_ITEM		=		ITEM.K_ITEM,
+			@VP_L_BORRADO	=		ITEM.L_BORRADO
+									FROM	ITEM
+									WHERE	ITEM.K_ITEM=@PP_K_ITEM										
 	-- ===========================
 
 	IF @VP_RESULTADO=''
-		IF ( @VP_K_SUPPLIER IS NULL )
-			SET @VP_RESULTADO =  'The [SUPPLIER] does not exist.' 
+		IF ( @VP_K_ITEM IS NULL )
+			SET @VP_RESULTADO =  'The [ITEM] does not exist.' 
 	
 	-- ===========================
 
 	IF @VP_RESULTADO=''
 		IF @VP_L_BORRADO=1
-			SET @VP_RESULTADO =  'The [SUPPLIER] was down.' 
+			SET @VP_RESULTADO =  'The [ITEM] was down.' 
 					
 	-- /////////////////////////////////////////////////////
 	
@@ -187,16 +164,16 @@ GO
 -- //////////////////////////////////////////////////////////////
 
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_SUPPLIER_DELETE]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_RN_SUPPLIER_DELETE]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_ITEM_DELETE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_ITEM_DELETE]
 GO
 
 
-CREATE PROCEDURE [dbo].[PG_RN_SUPPLIER_DELETE]
+CREATE PROCEDURE [dbo].[PG_RN_ITEM_DELETE]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_SUPPLIER						[INT],	
+	@PP_K_ITEM							[INT],	
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
@@ -205,15 +182,15 @@ AS
 		
 	-- ///////////////////////////////////////////
 	IF @VP_RESULTADO=''
-		EXECUTE [dbo].[PG_RN_SUPPLIER_EXISTS]			@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-														@PP_K_SUPPLIER,	 
-														@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
+		EXECUTE [dbo].[PG_RN_ITEM_EXISTS]			@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+													@PP_K_ITEM,	 
+													@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 	-- ///////////////////////////////////////////
 
 	IF @VP_RESULTADO=''
-		EXECUTE [dbo].[PG_RN_SUPPLIER_ITS_DELETEABLE]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-														@PP_K_SUPPLIER,	 
-														@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
+		EXECUTE [dbo].[PG_RN_ITEM_ITS_DELETEABLE]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+													@PP_K_ITEM,	 
+													@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 	-- ///////////////////////////////////////////
 
 	IF	@VP_RESULTADO<>''
@@ -232,16 +209,16 @@ GO
 -- //////////////////////////////////////////////////////////////
 
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_SUPPLIER_INSERT]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_RN_SUPPLIER_INSERT]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_ITEM_INSERT]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_ITEM_INSERT]
 GO
 
 
-CREATE PROCEDURE [dbo].[PG_RN_SUPPLIER_INSERT]
+CREATE PROCEDURE [dbo].[PG_RN_ITEM_INSERT]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_SUPPLIER						[INT],	
+	@PP_K_ITEM							[INT],	
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
@@ -251,8 +228,8 @@ AS
 	-- ///////////////////////////////////////////
 
 	IF @VP_RESULTADO=''
-		EXECUTE [dbo].[PG_RN_SUPPLIER_EXISTS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_SUPPLIER,	 
+		EXECUTE [dbo].[PG_RN_ITEM_EXISTS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+												@PP_K_ITEM,	 
 												@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 
 	-- ///////////////////////////////////////////
@@ -274,16 +251,16 @@ GO
 -- //////////////////////////////////////////////////////////////
 
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_SUPPLIER_UPDATE]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_RN_SUPPLIER_UPDATE]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_ITEM_UPDATE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_ITEM_UPDATE]
 GO
 
 
-CREATE PROCEDURE [dbo].[PG_RN_SUPPLIER_UPDATE]
+CREATE PROCEDURE [dbo].[PG_RN_ITEM_UPDATE]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_SUPPLIER						[INT],	
+	@PP_K_ITEM							[INT],	
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
@@ -293,8 +270,8 @@ AS
 	-- ///////////////////////////////////////////
 
 	IF @VP_RESULTADO=''
-		EXECUTE [dbo].[PG_RN_SUPPLIER_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-													@PP_K_SUPPLIER,	 
+		EXECUTE [dbo].[PG_RN_ITEM_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+													@PP_K_ITEM,	 
 													@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 	-- //////////////////////////////////////
 	

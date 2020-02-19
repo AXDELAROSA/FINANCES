@@ -43,7 +43,7 @@ AS
 	
 	DECLARE @VP_K_FOLIO				INT
 
-	EXECUTE [COT19_Cotizaciones_V9999_R0].DBO.[PG_RN_OBTENER_ID_X_REFERENCIA]			
+	EXECUTE [BD_GENERAL].DBO.[PG_RN_OBTENER_ID_X_REFERENCIA]			
 										@PP_BUSCAR,	@OU_K_ELEMENTO = @VP_K_FOLIO	OUTPUT
 	-- =========================================
 		
@@ -58,7 +58,7 @@ AS
 				-- =============================	
 	FROM		ADDRESS_GEO, 
 				STATUS_ADDRESS_GEO, CATEGORY_ADDRESS_GEO,
-				COT19_Cotizaciones_V9999_R0.DBO.STATE_GEO
+				[BD_GENERAL].DBO.STATE_GEO
 				,DATA_02.DBO.users_pearl
 				-- =============================
 	WHERE		ADDRESS_GEO.K_STATE_GEO=STATE_GEO.K_STATE_GEO
@@ -111,7 +111,7 @@ AS
 				-- =============================	
 	FROM		ADDRESS_GEO, 
 				STATUS_ADDRESS_GEO, CATEGORY_ADDRESS_GEO,
-				COT19_Cotizaciones_V9999_R0.DBO.STATE_GEO
+				[BD_GENERAL].DBO.STATE_GEO
 				,DATA_02.DBO.users_pearl
 				-- =============================
 	WHERE		ADDRESS_GEO.K_STATE_GEO=STATE_GEO.K_STATE_GEO
@@ -154,8 +154,8 @@ AS
 	-- /////////////////////////////////////////////////////////////////////
 	DECLARE @VP_K_ADDRESS_GEO			INT = 0
 
-		EXECUTE [DATA_02Pruebas].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
-																	'ADDRESS_GEO', 'K_ADDRESS_GEO',
+		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
+																'ADDRESS_GEO', 'K_ADDRESS_GEO',
 													@OU_K_TABLA_DISPONIBLE = @VP_K_ADDRESS_GEO	OUTPUT
 
 		-- //////////////////////////////////////////////////////////////
