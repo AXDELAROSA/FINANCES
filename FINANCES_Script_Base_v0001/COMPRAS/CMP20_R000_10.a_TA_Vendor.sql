@@ -11,9 +11,6 @@ USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
-
-
-
 -- //////////////////////////////////////////////////////////////
 -- // DROPs
 -- //////////////////////////////////////////////////////////////
@@ -29,8 +26,6 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[STATUS_VENDOR]') AND type in (N'U'))
 	DROP TABLE [dbo].[STATUS_VENDOR]
 GO
-
-
 
 
 -- ////////////////////////////////////////////////////////////////
@@ -207,22 +202,20 @@ EXECUTE [dbo].[PG_CI_CATEGORY_VENDOR]  0, 139, 33, 'TRANSPORTE TERRESTRE'			,'' 
 
 GO
 
-
 -- ////////////////////////////////////////////////////////////////
 -- //					VENDOR				 
 -- ////////////////////////////////////////////////////////////////
 
-
 CREATE TABLE [dbo].[VENDOR] (
 	[K_VENDOR]						[INT] NOT NULL,			
-	[D_VENDOR]						[VARCHAR](100) NOT NULL,
-	[C_VENDOR]						[VARCHAR](255) NOT NULL,
-	[O_VENDOR]						[INT] NOT NULL,
+	[D_VENDOR]						[VARCHAR](250) NOT NULL,
+	[C_VENDOR]						[VARCHAR](255) NOT NULL DEFAULT '',
+	[O_VENDOR]						[INT] NOT NULL DEFAULT 10,
 	-- ============================
-	[BUSINESS_NAME]					[VARCHAR](100) NOT NULL, 
-	[RFC_VENDOR]					[VARCHAR](100) NOT NULL,
-	[EMAIL]							[VARCHAR](100) NOT NULL,
-	[PHONE]							[VARCHAR](100) NOT NULL,
+	[BUSINESS_NAME]					[VARCHAR](250) NOT NULL, 
+	[RFC_VENDOR]					[VARCHAR](25) NOT NULL	DEFAULT '',
+	[EMAIL]							[VARCHAR](100) NOT NULL DEFAULT '',
+	[PHONE]							[VARCHAR](25) NOT NULL	DEFAULT '',
 	[N_CREDIT_DAYS]					[INT] NULL DEFAULT 30,
 	-- ============================
 	[K_STATUS_VENDOR]				[INT] NOT NULL,
@@ -232,12 +225,10 @@ GO
 
 -- //////////////////////////////////////////////////////
 
-
 ALTER TABLE [dbo].[VENDOR]
 	ADD CONSTRAINT [PK_VENDOR]
-		PRIMARY KEY CLUSTERED ([K_VENDOR])
+		PRIMARY KEY CLUSTERED ([K_VENDOR])	
 GO
-
 
 --CREATE UNIQUE NONCLUSTERED 
 --	INDEX [UN_VENDOR_01_RFC] 
@@ -255,7 +246,6 @@ GO
 
 -- //////////////////////////////////////////////////////
 
-
 ALTER TABLE [dbo].[VENDOR] 
 	ADD		[K_USUARIO_ALTA]			[INT] NOT NULL,
 			[F_ALTA]					[DATETIME] NOT NULL,
@@ -265,7 +255,6 @@ ALTER TABLE [dbo].[VENDOR]
 			[K_USUARIO_BAJA]			[INT] NULL,
 			[F_BAJA]					[DATETIME] NULL;
 GO
-
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
