@@ -461,16 +461,37 @@ EXECUTE [dbo].[PG_CI_VENDOR] 0, 139, 378, 'XPEDX, SA DE CV' , '' , 10 , 'XPEDX, 
 SET NOCOUNT OFF
 -- ===============================================
 
+INSERT INTO ADDRESS_VENDOR
+		(K_VENDOR,			K_ADDRESS_VENDOR,
+		D_ADDRESS_VENDOR_1,
+		K_USUARIO_ALTA,		F_ALTA,
+		K_USUARIO_CAMBIO,	F_CAMBIO,
+		L_BORRADO)
+SELECT	K_VENDOR,K_VENDOR,
+		'CALLE',
+		139,GETDATE(),
+		139,GETDATE(),
+		0
+FROM	VENDOR
 
+
+INSERT INTO CONTACT_VENDOR
+		(K_VENDOR,			K_CONTACT_VENDOR,
+		K_USUARIO_ALTA,		F_ALTA,
+		K_USUARIO_CAMBIO,	F_CAMBIO,
+		L_BORRADO)
+SELECT	K_VENDOR,K_VENDOR,
+		139,GETDATE(),
+		139,GETDATE(),
+		0
+FROM	VENDOR
 
 
-
-
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_VENDOR]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CI_VENDOR]
+GO
 
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
-
-
-

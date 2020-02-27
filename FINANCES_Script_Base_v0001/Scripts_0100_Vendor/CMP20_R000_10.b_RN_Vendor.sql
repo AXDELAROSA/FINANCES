@@ -37,54 +37,50 @@ AS
 		
 	-- ///////////////////////////////////////////
 	IF @VP_RESULTADO=''
-		BEGIN	
-		DECLARE @VP_N_VENDOR_X_D_VENDOR		INT
+	BEGIN	
+		DECLARE @VP_N_VENDOR_X_D_VENDOR			INT
 		
 		SELECT	@VP_N_VENDOR_X_D_VENDOR =		COUNT	(VENDOR.K_VENDOR)
-													FROM	VENDOR
-													WHERE	VENDOR.K_VENDOR<>@PP_K_VENDOR
-													AND		VENDOR.D_VENDOR=@PP_D_VENDOR										
+												FROM	VENDOR
+												WHERE	VENDOR.K_VENDOR<>@PP_K_VENDOR
+												AND		VENDOR.D_VENDOR=@PP_D_VENDOR										
 		-- =============================
-		IF @VP_RESULTADO=''
-		BEGIN
 			IF @VP_N_VENDOR_X_D_VENDOR>0
 			BEGIN
-				SET @VP_RESULTADO =  'There are already [VENDORS] with that Description ['+@PP_D_VENDOR+'].' 
+				SET @VP_RESULTADO =  'There are already [VENDORS] with that Description ['+@PP_D_VENDOR+'].'
 			END
-		END
 	END			
 
 	-- ///////////////////////////////////////////
 	IF @VP_RESULTADO=''
-		BEGIN	
+	BEGIN	
 		DECLARE @VP_N_VENDOR_X_RFC_VENDOR		INT = 0
 
 		IF @PP_RFC_VENDOR=''			-- SOLAMENTE APLICA LA VALIDACION CUANDO EL RFC_VENDOR NO VIENE VACIO
 		BEGIN 
 			SET		@VP_N_VENDOR_X_RFC_VENDOR =		0
 		END
-		ELSE
-		BEGIN
+	END
+	ELSE
+	BEGIN
 			SELECT	@VP_N_VENDOR_X_RFC_VENDOR =		COUNT	(VENDOR.K_VENDOR)
 												FROM	VENDOR
 												WHERE	VENDOR.K_VENDOR<>@PP_K_VENDOR
 												AND		VENDOR.RFC_VENDOR=@PP_RFC_VENDOR	
 												AND		@PP_RFC_VENDOR<>''			
-		END
-		-- =============================
-		IF @VP_RESULTADO=''
-		BEGIN
+		
 			IF @VP_N_VENDOR_X_RFC_VENDOR>0
 			BEGIN
 				SET @VP_RESULTADO =  'There are already [VENDORS] with that RFC ['+@PP_RFC_VENDOR+'].' 
 			END
-		END
-	END	
+	END
 		
 	-- ///////////////////////////////////////////
 	
-	IF	@VP_RESULTADO<>''
+	IF @VP_RESULTADO<>''
+	BEGIN
 		SET	@VP_RESULTADO = @VP_RESULTADO + ' //UNI//'
+	END
 	
 	-- ///////////////////////////////////////////
 		
@@ -256,7 +252,7 @@ AS
 	-- ///////////////////////////////////////////
 
 	IF @VP_RESULTADO=''
-		EXECUTE [dbo].[PG_RN_VENDOR_EXISTS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+		EXECUTE [dbo].[PG_RN_VENDOR_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
 												@PP_K_VENDOR,	 
 												@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 

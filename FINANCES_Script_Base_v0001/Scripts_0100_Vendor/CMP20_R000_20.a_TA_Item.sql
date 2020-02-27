@@ -106,7 +106,9 @@ GO
 EXECUTE [dbo].[PG_CI_STATUS_ITEM] 0,139,1, 'ACTIVE',			'', 'ACTVE', 10,1
 EXECUTE [dbo].[PG_CI_STATUS_ITEM] 0,139,2, 'INACTIVE',			'', 'INACT', 20,1
 GO
-
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_STATUS_ITEM]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CI_STATUS_ITEM]
+GO
 
 
 
@@ -180,6 +182,11 @@ EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  0, '(TO DEFINE)'		,'' , '2DFNE', 10 , 
 EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  1, 'PRODUCT'			,'' , 'PRODC', 10 , 1
 EXECUTE [dbo].[PG_CI_TYPE_ITEM]  0, 139,  2, 'SERVICE'			,'' , 'SERVI', 10 , 1
 GO
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_TYPE_ITEM]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CI_TYPE_ITEM]
+GO
+
+
 
 -- ////////////////////////////////////////////////////////////////
 -- //					UNIT_CLASS				 
@@ -252,7 +259,9 @@ EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  3, 'SURFACE'			,''	, 'SRFAC', 10 , 1
 EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  4, 'VOLUME'			,''	, 'VOLUM', 10 , 1
 EXECUTE [dbo].[PG_CI_UNIT_CLASS]  0, 139,  5, 'WEIGHT'			,''	, 'WEIGH', 10 , 1
 GO
-
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_UNIT_CLASS]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CI_UNIT_CLASS]
+GO
 
 
 -- ////////////////////////////////////////////////////////////////
@@ -332,20 +341,25 @@ GO
 
 
 EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  0, '(TO DEFINE)'	,''		, '2DFNE', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  1, 'FOOT'			,'ft'	, 'FOOT',  10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  2, 'GALLON'		,'gal'	, 'GALON', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'INCH'			,'in'	, 'INCH',  10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  4, 'KILOGRAM'		,'kg'	, 'KILOG', 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  5, 'LITER'			,'L'	, 'LITER', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  6, 'METER'			,'m'	, 'METER', 10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'OUNCE'			,'oz'	, 'OUNCE', 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'PIECE'			,''		, 'PIECE', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'POUND'			,'lb'	, 'POUND', 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10,'SQUARE FOOT'	,'sqft'	, 'SQFT',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  11, 'SQUARE INCH'	,'sqin'	, 'INCH',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  12, 'SERVICE'		,''		, 'SERVI', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  1, 'CENTIMETER'	,'cm'	, 'CENTI', 10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  2, 'FOOT'			,'ft'	, 'FOOT',  10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'GALLON'		,'gal'	, 'GALON', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  4, 'GRAM'			,'g'	, 'GRAM', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  5, 'INCH'			,'in'	, 'INCH',  10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  6, 'KILOGRAM'		,'kg'	, 'KILOG', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'LITER'			,'L'	, 'LITER', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'MILILITER'		,'ml'	, 'MILIL', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'METER'			,'m'	, 'METER', 10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10, 'OUNCE'		,'oz'	, 'OUNCE', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  11, 'PIECE'		,'pc'	, 'PIECE', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  12, 'POUND'		,'lb'	, 'POUND', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  13,'SQUARE FOOT'	,'sqft'	, 'SQFT',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  14, 'SQUARE INCH'	,'sqin'	, 'INCH',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  15, 'SERVICE'		,''		, 'SERVI', 10 , 1, 0
 GO
-
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_UNIT_OF_ITEM]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CI_UNIT_OF_ITEM]
+GO
 
 -- ////////////////////////////////////////////////////////////////
 -- //					ITEM				 
@@ -369,7 +383,7 @@ CREATE TABLE [dbo].[ITEM] (
 	-- ============================	
 	[K_CURRENCY]					[INT] NOT NULL,			
 	-- ============================	
---	[K_VENDOR]						[INT] NOT NULL,
+	[K_VENDOR]						[INT] NOT NULL
 --	[QUANTITY]						[INT] NOT NULL	
 ) ON [PRIMARY]
 GO

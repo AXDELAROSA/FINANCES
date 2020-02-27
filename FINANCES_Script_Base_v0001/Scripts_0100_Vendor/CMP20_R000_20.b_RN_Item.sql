@@ -27,6 +27,7 @@ CREATE PROCEDURE [dbo].[PG_RN_ITEM_UNIQUE]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
+	@PP_K_VENDOR						[INT],	
 	@PP_K_ITEM							[INT],	
 	@PP_D_ITEM							[VARCHAR] (100),
 		-- ===========================		
@@ -44,23 +45,23 @@ AS
 		SELECT	@VP_N_ITEM_X_D_ITEM =		COUNT	(ITEM.K_ITEM)
 													FROM	ITEM
 													WHERE	ITEM.K_ITEM<>@PP_K_ITEM
+													AND		ITEM.K_VENDOR=@PP_K_VENDOR
 													AND		ITEM.D_ITEM=@PP_D_ITEM										
-		-- =============================
+		IF @VP_N_ITEM_X_D_ITEM>0
+		BEGIN
+			DECLARE @PP_D_VENDOR VARCHAR(250)
+				SELECT	@PP_D_VENDOR=ISNULL(D_VENDOR,'NOT AVAILABLE')
+				FROM	VENDOR 
+				WHERE K_VENDOR=@PP_K_VENDOR
 
-		IF @VP_RESULTADO=''
-			IF @VP_N_ITEM_X_D_ITEM>0
-				SET @VP_RESULTADO =  'There are already [ITEMS] with that Description ['+@PP_D_ITEM+'].' 
-		END	
-		
-	-- ///////////////////////////////////////////
-		
+				SET @VP_RESULTADO =  'There are already [ITEMS] with that Description ['+@PP_D_ITEM+']. In [VENDOR] ['+@PP_D_VENDOR+']' 
+		END
+	END			
+	-- ///////////////////////////////////////////		
 	IF	@VP_RESULTADO<>''
-		SET	@VP_RESULTADO = @VP_RESULTADO + ' //UNI//'
-	
-	-- ///////////////////////////////////////////
-		
+		SET	@VP_RESULTADO = @VP_RESULTADO + ' //UNI//'	
+	-- ///////////////////////////////////////////		
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
-
 	-- /////////////////////////////////////////////////////
 GO
 
@@ -229,8 +230,8 @@ AS
 
 	IF @VP_RESULTADO=''
 		EXECUTE [dbo].[PG_RN_ITEM_EXISTS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_ITEM,	 
-												@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
+											@PP_K_ITEM,	 
+											@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 
 	-- ///////////////////////////////////////////
 	
@@ -271,8 +272,8 @@ AS
 
 	IF @VP_RESULTADO=''
 		EXECUTE [dbo].[PG_RN_ITEM_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-													@PP_K_ITEM,	 
-													@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
+												@PP_K_ITEM,	 
+												@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 	-- //////////////////////////////////////
 	
 	IF	@VP_RESULTADO<>''
