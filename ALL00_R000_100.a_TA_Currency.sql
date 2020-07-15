@@ -24,7 +24,6 @@ GO
 -- // DE ACUERDO AL ISO 4217
 -- //////////////////////////////////////////////////////////////
 --	SELECT * FROM CURRENCY
-
 CREATE TABLE [dbo].[CURRENCY] (
 	[K_CURRENCY]					[INT]				NOT NULL,
 	[D_CURRENCY]					[VARCHAR]	(250)	NOT NULL,

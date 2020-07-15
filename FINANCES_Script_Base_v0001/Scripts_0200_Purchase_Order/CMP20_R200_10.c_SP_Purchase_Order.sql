@@ -11,16 +11,14 @@ USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
-
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> SELECT / LISTADO
 -- //////////////////////////////////////////////////////////////
-
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_LI_HEADER_PURCHASE_ORDER]
 GO
-
--- EXECUTE [dbo].[PG_LI_HEADER_PURCHASE_ORDER] 0,139,'',-1,-1,-1,-1,-1,null,null
+-- EXECUTE [dbo].[PG_LI_HEADER_PURCHASE_ORDER] 0,139,'',-1,-1,-1,null,null
+-- EXECUTE [dbo].[PG_LI_HEADER_PURCHASE_ORDER] 0,139, '' , -1 , -1 , -1 , '2020-06-08' , '2020-07-10'
 CREATE PROCEDURE [dbo].[PG_LI_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -28,83 +26,78 @@ CREATE PROCEDURE [dbo].[PG_LI_HEADER_PURCHASE_ORDER]
 	@PP_BUSCAR						VARCHAR(200),
 	@PP_K_STATUS_PURCHASE_ORDER		INT,
 	@PP_K_VENDOR					INT,
-	@PP_K_PLACED_BY					INT,
-	@PP_K_TERMS						INT,
 	@PP_K_CURRENCY					INT,
 	@PP_F_INIT						DATE,
 	@PP_F_FINISH					DATE
 AS
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''
-	DECLARE @VP_L_APLICAR_MAX_ROWS	INT=1
-		
+	DECLARE @VP_L_APLICAR_MAX_ROWS	INT=1		
 	-- ///////////////////////////////////////////
 	DECLARE @VP_LI_N_REGISTROS	INT =5000	
-	-- =========================================	
-	
+	-- =========================================		
 	DECLARE @VP_K_FOLIO				INT
-
 	EXECUTE [BD_GENERAL].DBO.[PG_RN_OBTENER_ID_X_REFERENCIA]			
 								@PP_BUSCAR,	@OU_K_ELEMENTO = @VP_K_FOLIO	OUTPUT
-	-- =========================================
-		
-	IF @VP_MENSAJE<>''
-		SET @VP_LI_N_REGISTROS = 0
+	-- =========================================		
+	IF @VP_MENSAJE=''
+	BEGIN
+		--SET @VP_LI_N_REGISTROS = 0
 		
 	SELECT		TOP (@VP_LI_N_REGISTROS)
-				HEADER_PURCHASE_ORDER.*,
+				CONVERT(INTEGER,(TAX_RATE*100)) AS TAX,
+				F_DATE_PURCHASE_ORDER AS [DATE],
+				F_REQUIRED_PURCHASE_ORDER AS [REQUIRED],
 				S_STATUS_PURCHASE_ORDER	, D_STATUS_PURCHASE_ORDER,
---				D_VENDOR,
+				D_VENDOR,
 				S_PLACED_BY	, D_PLACED_BY,
 				S_TERMS		, D_TERMS	 ,				
-				S_CURRENCY	, D_CURRENCY 
+				S_CURRENCY	, D_CURRENCY,
+				D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
+				HEADER_PURCHASE_ORDER.*
 				-- =============================	
-	FROM		HEADER_PURCHASE_ORDER,
-				STATUS_PURCHASE_ORDER, 
-				VENDOR,
-				PLACED_BY,
-				BD_GENERAL.DBO.TERMS,				
-				BD_GENERAL.DBO.CURRENCY	
+	FROM		HEADER_PURCHASE_ORDER
+	INNER JOIN 	STATUS_PURCHASE_ORDER	ON STATUS_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER=HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER
+	INNER JOIN 	VENDOR					ON VENDOR.K_VENDOR=HEADER_PURCHASE_ORDER.K_VENDOR
+	INNER JOIN 	PLACED_BY				ON PLACED_BY.K_PLACED_BY=HEADER_PURCHASE_ORDER.K_PLACED_BY
+	INNER JOIN	DELIVERY_PURCHASE_ORDER ON DELIVERY_PURCHASE_ORDER.K_DELIVERY_PURCHASE_ORDER=HEADER_PURCHASE_ORDER.K_DELIVERY_TO
+	INNER JOIN 	BD_GENERAL.DBO.TERMS	ON TERMS.K_TERMS=HEADER_PURCHASE_ORDER.K_TERMS
+	INNER JOIN 	BD_GENERAL.DBO.CURRENCY	ON CURRENCY.K_CURRENCY=HEADER_PURCHASE_ORDER.K_CURRENCY
 				-- =============================
-	WHERE		HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER=STATUS_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER
-	AND			HEADER_PURCHASE_ORDER.K_VENDOR=VENDOR.K_VENDOR
-	AND			HEADER_PURCHASE_ORDER.K_PLACED_BY=PLACED_BY.K_PLACED_BY
-	AND			HEADER_PURCHASE_ORDER.K_TERMS=TERMS.K_TERMS
-	AND			HEADER_PURCHASE_ORDER.K_CURRENCY=CURRENCY.K_CURRENCY
-				-- =============================
-	AND			(	HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@VP_K_FOLIO
+	WHERE		(	HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@VP_K_FOLIO
 				OR	HEADER_PURCHASE_ORDER.ISSUED_BY_PURCHASE_ORDER			LIKE '%'+@PP_BUSCAR+'%'
 				OR	HEADER_PURCHASE_ORDER.CONFIRMING_ORDER_WITH				LIKE '%'+@PP_BUSCAR+'%' 
-				OR	HEADER_PURCHASE_ORDER.DELIVERY_TO						LIKE '%'+@PP_BUSCAR+'%'
+--				OR	HEADER_PURCHASE_ORDER.DELIVERY_TO						LIKE '%'+@PP_BUSCAR+'%'
 				OR	HEADER_PURCHASE_ORDER.C_PURCHASE_ORDER					LIKE '%'+@PP_BUSCAR+'%' )
 				-- =============================
 	AND			( @PP_F_INIT IS NULL		OR	@PP_F_INIT<=F_DATE_PURCHASE_ORDER)
-	AND			( @PP_F_FINISH IS NULL		OR	@PP_F_INIT>=F_DATE_PURCHASE_ORDER)
+	AND			( @PP_F_FINISH IS NULL		OR	@PP_F_FINISH>=F_DATE_PURCHASE_ORDER)
 				-- =============================
-	AND			( @PP_F_INIT IS NULL		OR	@PP_F_INIT<=F_REQUIRED_PURCHASE_ORDER)
-	AND			( @PP_F_FINISH IS NULL		OR	@PP_F_INIT>=F_REQUIRED_PURCHASE_ORDER)
+	--AND			( @PP_F_INIT IS NULL		OR	@PP_F_INIT<=F_REQUIRED_PURCHASE_ORDER)
+	--AND			( @PP_F_FINISH IS NULL		OR	@PP_F_INIT>=F_REQUIRED_PURCHASE_ORDER)
 				-- =============================
 	AND			( @PP_K_STATUS_PURCHASE_ORDER	=-1		OR	HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER=@PP_K_STATUS_PURCHASE_ORDER )
 	AND			( @PP_K_VENDOR =-1			OR	HEADER_PURCHASE_ORDER.K_VENDOR=@PP_K_VENDOR )
-	AND			( @PP_K_PLACED_BY =-1		OR	HEADER_PURCHASE_ORDER.K_PLACED_BY=@PP_K_PLACED_BY )
-	AND			( @PP_K_TERMS =-1			OR	HEADER_PURCHASE_ORDER.K_TERMS=@PP_K_TERMS )
+--	AND			( @PP_K_PLACED_BY =-1		OR	HEADER_PURCHASE_ORDER.K_PLACED_BY=@PP_K_PLACED_BY )
+--	AND			( @PP_K_TERMS =-1			OR	HEADER_PURCHASE_ORDER.K_TERMS=@PP_K_TERMS )
 	AND			( @PP_K_CURRENCY =-1		OR	HEADER_PURCHASE_ORDER.K_CURRENCY=@PP_K_CURRENCY )
 				-- =============================
 	AND			HEADER_PURCHASE_ORDER.L_BORRADO<>1
+--	GROUP BY	HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER
 	ORDER BY	F_DATE_PURCHASE_ORDER	DESC
+	END
 	-- /////////////////////////////////////////////////////////////////////
 GO
-
 
 
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> SELECT / FICHA
 -- //////////////////////////////////////////////////////////////
-
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 GO
-
--- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,2
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,1		
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,8008
+-- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,1
 CREATE PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -112,63 +105,176 @@ CREATE PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 	@PP_K_HEADER_PURCHASE_ORDER		INT
 AS
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
-	-- ///////////////////////////////////////////
-			
+	-- ///////////////////////////////////////////			
 	SELECT		TOP (1)
-				HEADER_PURCHASE_ORDER.*,
 				S_STATUS_PURCHASE_ORDER	, D_STATUS_PURCHASE_ORDER,
---				D_VENDOR,
+				D_VENDOR,
 				S_PLACED_BY	, D_PLACED_BY,
-				S_TERMS		, D_TERMS	 ,				
-				S_CURRENCY	, D_CURRENCY 
+				S_TERMS		, D_TERMS	 , C_TERMS	 ,
+				S_CURRENCY	, D_CURRENCY,	
+				D_DELIVERY_PURCHASE_ORDER	AS D_DELIVERY_TO,
+				C_DELIVERY_PURCHASE_ORDER	AS C_DELIVERY_TO,
+				S_DELIVERY_PURCHASE_ORDER	AS S_DELIVERY_TO,
+				CONVERT(INTEGER,TAX_RATE*100) AS TAX_RATE_PER,
+				-- ===========================	-- ===========================
+				CONVERT(VARCHAR, CAST(SUBTOTAL_PURCHASE_ORDER AS MONEY), 1)	AS SUBTOTAL_PURCHASE_ORDER,
+				CONVERT(VARCHAR, CAST(IVA_PURCHASE_ORDER AS MONEY), 1)		AS IVA_PURCHASE_ORDER,
+				CONVERT(VARCHAR, CAST(TOTAL_PURCHASE_ORDER AS MONEY), 1)	AS TOTAL_PURCHASE_ORDER,
+				-- ===========================	-- ===========================
+				-- ===========================	-- ===========================
+				-- ===========================	-- ===========================
+				---- PARA INSERTAR LOS NOMBRES DE LAS AUTORIZACIONES/APROBACIONES Y QUIEN GENERA.
+				CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) AS APPROVED,
+				---- PARA OBTENER LA RUTA DEL ARCHIVO DE LA FIRMA DIGITAL DEL GERENTE
+				CONCAT(C_FIRMAS,D_FIRMAS,S_FIRMAS)	AS RUTA_FIRMA,
+				-- ===========================	-- ===========================
+				-- ===========================	-- ===========================
+				-- ===========================	-- ===========================
+				--(CASE	
+				--	WHEN CAST(F_REQUIRED_PURCHASE_ORDER AS DATE)=CAST(F_DATE_PURCHASE_ORDER AS DATE) THEN	'ASAP'
+				--	ELSE	F_REQUIRED_PURCHASE_ORDER 
+				--END	) AS ASAP,
+				HEADER_PURCHASE_ORDER.*
 				-- =============================	
 	FROM		HEADER_PURCHASE_ORDER,
 				STATUS_PURCHASE_ORDER, 
 				VENDOR,
 				PLACED_BY,
 				BD_GENERAL.DBO.TERMS,				
-				BD_GENERAL.DBO.CURRENCY	
+				BD_GENERAL.DBO.CURRENCY,
+				DELIVERY_PURCHASE_ORDER,
+				-- =============================
+				-- =============================
+				HOWE.DBO.VISTA_GAFETES,				-- PARA OBTENER EL NOMBRE DE LA PERSONA QUE AUTORIZARÁ LA PO
+				BD_GENERAL.DBO.FIRMAS
+				-- =============================
 				-- =============================
 	WHERE		HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER=STATUS_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER
 	AND			HEADER_PURCHASE_ORDER.K_VENDOR=VENDOR.K_VENDOR
 	AND			HEADER_PURCHASE_ORDER.K_PLACED_BY=PLACED_BY.K_PLACED_BY
 	AND			HEADER_PURCHASE_ORDER.K_TERMS=TERMS.K_TERMS
+	AND			HEADER_PURCHASE_ORDER.K_DELIVERY_TO=DELIVERY_PURCHASE_ORDER.K_DELIVERY_PURCHASE_ORDER
 	AND			HEADER_PURCHASE_ORDER.K_CURRENCY=CURRENCY.K_CURRENCY
 				-- =============================
+				-- =============================
+	AND			EN_NUM_EMP=HEADER_PURCHASE_ORDER.K_APPROVED_BY
+	AND			HEADER_PURCHASE_ORDER.K_APPROVED_BY=FIRMAS.K_FIRMAS
+				-- =============================
+				-- =============================
 	AND			HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	AND			HEADER_PURCHASE_ORDER.L_BORRADO<>1
-		
+	AND			HEADER_PURCHASE_ORDER.L_BORRADO<>1		
 	-- ////////////////////////////////////////////////////////////////////
 GO
 
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> SELECT / FICHA
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_DETAILS_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER]
+GO
+-- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,8008
+CREATE PROCEDURE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_K_HEADER_PURCHASE_ORDER		INT
+AS
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
+	-- ///////////////////////////////////////////
+	SELECT		TOP (5000)
+				S_CURRENCY,
+				ITEM.K_CURRENCY,
+				PART_NUMBER_ITEM_VENDOR,
+				D_ITEM,
+				DETAILS_PURCHASE_ORDER.QUANTITY_ORDER AS QUANTITY,
+				PRICE_ITEM,
+				TOTAL_PRICE as TOTAL_ITEM,
+				DETAILS_PURCHASE_ORDER.*
+	FROM		DETAILS_PURCHASE_ORDER
+	INNER JOIN	ITEM		ON	DETAILS_PURCHASE_ORDER.K_ITEM=ITEM.K_ITEM
+	INNER JOIN	BD_GENERAL.DBO.CURRENCY	ON	ITEM.K_CURRENCY=CURRENCY.K_CURRENCY
+	WHERE		DETAILS_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
+	-- ////////////////////////////////////////////////////////////////////
+GO
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> SELECT / FICHA
+-- //////////////////////////////////////////////////////////////
+--EN_NUM_DEPT		DP_DESC_DEPTO					--EN_NUM_DEPT		DP_DESC_DEPTO
+	--1				DEPTO 1    (ADMINISTRACION)			--2				DEPTO 2 (PRODUCCION)
+	--3				DEPTO 3 (MATERIALES)				--4				DEPTO 4  (CONTROL DE CALIDAD)
+	--5				INGENIERIA-MANTENIMIENTO			--6				PRODUCCION
+	--7				SISTEMAS							--8				FINANZAS
+	--9				GERENCIA							--10			NO EXISTE EL 10
+	--11			PERFORACION							--12			INGENIERIA DE PROYECTOS	
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_ISSUED]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_SK_ISSUED]
+GO
+-- EXECUTE [dbo].[PG_SK_ISSUED] 0,139,139
+-- EXECUTE [dbo].[PG_SK_ISSUED] 0,139,145
+-- EXECUTE [dbo].[PG_SK_ISSUED] 0,139,42
+CREATE PROCEDURE [dbo].[PG_SK_ISSUED]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO_ACCION		INT,
+	-- ===========================
+	@PP_K_USUARIO				INT
+AS
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
+	-- ///////////////////////////////////////////			
+	SELECT	TOP (1)
+			USUARIO_PEARL.K_USUARIO_PEARL AS K_USUARIO_ALTA,
+			CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) AS ISSUED,
+			(	CASE
+					WHEN	EN_NUM_DEPT IN (1)			THEN	(SELECT CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) FROM	HOWE.DBO.VISTA_GAFETES WHERE EN_NUM_DEPT=1 AND 	EN_SUPERVISOR='GERENTES' AND EN_NUM_EMP=7945)	-- RH					
+					WHEN	EN_NUM_DEPT IN (2,5,6,11)	THEN	(SELECT CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) FROM	HOWE.DBO.VISTA_GAFETES WHERE EN_NUM_DEPT=6 AND 	EN_SUPERVISOR='GERENTES')						-- PRODUCCION
+					WHEN	EN_NUM_DEPT IN (3)			THEN	(SELECT CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) FROM	HOWE.DBO.VISTA_GAFETES WHERE EN_NUM_DEPT=3 AND 	EN_SUPERVISOR='GERENTES')						-- MATERIALES
+					WHEN	EN_NUM_DEPT IN (4)			THEN	(SELECT CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) FROM	HOWE.DBO.VISTA_GAFETES WHERE EN_NUM_DEPT=4 AND 	EN_SUPERVISOR='GERENTES')						-- CALIDAD
+					WHEN	EN_NUM_DEPT IN (7,12)		THEN	(SELECT CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) FROM	HOWE.DBO.VISTA_GAFETES WHERE EN_NUM_DEPT=12 AND 	EN_SUPERVISOR='GERENTES')					-- PROYECTOS / SISTEMAS
+					WHEN	EN_NUM_DEPT IN (8)			THEN	(SELECT CONCAT(EP_NOMBRE,' ',EP_APELLIDO_PATERNO) FROM	HOWE.DBO.VISTA_GAFETES WHERE EN_NUM_DEPT=8 AND 	EN_SUPERVISOR='GERENTES')						-- FINANZAS
+					WHEN	EN_NUM_DEPT IN (9)			THEN	'JORGE HOLGUIN'
+					ELSE	'X'
+			END )		APPROVED,
+				--SE OBTIENE LA K_DEL GERENTE PARA OBTENER LA IMAGEN EN EL REPORTE DE LA PO
+			(	CASE
+					WHEN	EN_NUM_DEPT IN (1)			THEN	(7945)			-- RH					
+					WHEN	EN_NUM_DEPT IN (2,5,6,11)	THEN	(22)			-- PRODUCCION
+					WHEN	EN_NUM_DEPT IN (3)			THEN	(4475)			-- MATERIALES
+					WHEN	EN_NUM_DEPT IN (4)			THEN	(1299)			-- CALIDAD
+					WHEN	EN_NUM_DEPT IN (7,12)		THEN	(181)			-- PROYECTOS / SISTEMAS
+					WHEN	EN_NUM_DEPT IN (8)			THEN	(67)			-- FINANZAS
+					WHEN	EN_NUM_DEPT IN (9)			THEN	'JORGE HOLGUIN'
+					ELSE	'X'
+			END )		K_APPROVED,
+			'JORGE HOLGUIN' AS AUTHORIZED
+	FROM    BD_GENERAL.DBO.USUARIO_PEARL
+	LEFT JOIN HOWE.DBO.VISTA_GAFETES ON EN_NUM_EMP=K_EMPLEADO_PEARL
+	WHERE	L_BORRADO=0
+	AND		USUARIO_PEARL.K_USUARIO_PEARL=@PP_K_USUARIO
+	ORDER BY APELLIDO_PATERNO ASC
+	-- ////////////////////////////////////////////////////////////////////
+GO
 
 	
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> INSERT
 -- //////////////////////////////////////////////////////////////
-
-
+-- EXECUTE [dbo].[PG_IN_HEADER_PURCHASE_ORDER]	0, 139,  'TEST' , 
+--			'2020/07/07' , '2020/07/07' , 'ALEJANDRO DE LA ROSA' , 'ALEJANDRO DE LA ROSA' , 
+--			0 , '1' , 'RAFAEL FIERRO' , 1 , 0 , 1 , 8 , 2938.00 , 235.04 , 3173.04 , 
+--			'24/27/26/25/28/30/29' , '2/4/6/6/6/4/2' , 
+--			'45.00/27.00/130.00/78.00/22.00/30.00/620.00' , 
+--			'90.00/108.00/780.00/468.00/132.00/120.00/1240.00' 
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_IN_HEADER_PURCHASE_ORDER]
 GO
-
--- EXECUTE [dbo].[PG_IN_HEADER_PURCHASE_ORDER] 0, 139,												
---				'TEST INSERT HEADER PURCHASE',
---				1,
---				'2020-02-24' , '2020-02-24',
---				'ALEJANDROD','ALEJANDROD',1,
---				'PEARL','ALEJANDROD',1,
---				1,1,16,0,0,0,
---				0,0,'CUENTA'
 
 CREATE PROCEDURE [dbo].[PG_IN_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
---	@PP_K_HEADER_PURCHASE_ORDER				[INT],			
 	@PP_C_PURCHASE_ORDER					[VARCHAR](255),
-	-- ============================
-	@PP_K_STATUS_PURCHASE_ORDER				[INT],
 	-- ============================
 	@PP_F_DATE_PURCHASE_ORDER				[DATE],
 	@PP_F_REQUIRED_PURCHASE_ORDER			[DATE],
@@ -176,42 +282,39 @@ CREATE PROCEDURE [dbo].[PG_IN_HEADER_PURCHASE_ORDER]
 	@PP_ISSUED_BY_PURCHASE_ORDER			[VARCHAR] (150),
 	@PP_REQUIRED_PURCHASE_ORDER				[VARCHAR] (150),
 	@PP_K_PLACED_BY							[INT],
+	@PP_K_APPROVED_BY						[INT],
 	-- ============================
-	@PP_DELIVERY_TO							[VARCHAR] (500),
+	@PP_K_DELIVERY_TO						[INT],
 	@PP_CONFIRMING_ORDER_WITH				[VARCHAR] (150),
 	@PP_K_VENDOR							[INT],
 	-- ============================
 	@PP_K_TERMS								[INT],
 	@PP_K_CURRENCY							[INT],
 	@PP_TAX_RATE							[DECIMAL] (10,4),
-	@PP_ADDITIONAL_TAXES_PURCHASE_ORDER		[DECIMAL] (10,4),
-	@PP_ADDITIONAL_DISCOUNTS_PURCHASE_ORDER	[DECIMAL] (10,4),
-	@PP_PREPAID_PURCHASE_ORDER				[DECIMAL] (10,4),
 	-- ============================
 	@PP_SUBTOTAL_PURCHASE_ORDER				[DECIMAL] (10,4),
+	@PP_IVA_PURCHASE_ORDER					[DECIMAL] (10,4),
 	@PP_TOTAL_PURCHASE_ORDER				[DECIMAL] (10,4),
-	-- ============================
-	@PP_ACCOUNT_PURCHASE_ORDER				[VARCHAR] (17)
+	-----=====================================================
+	@PP_ITEM_ARRAY							NVARCHAR(MAX),
+	@PP_QUANTITY_ARRAY						NVARCHAR(MAX),
+	@PP_PRICE_ARRAY							NVARCHAR(MAX),
+	@PP_TOTAL_ARRAY							NVARCHAR(MAX),
+	-----=====================================================
+	@PP_TOTAL_ITEMS							[INT]
 AS			
 DECLARE @VP_MENSAJE				VARCHAR(500) = ''
-DECLARE @VP_K_HEADER_PURCHASE_ORDER			INT = 0;	
-	
+DECLARE @VP_K_HEADER_PURCHASE_ORDER			INT = 0;		
+DECLARE @VP_K_PO			INT = 0;		
 BEGIN TRANSACTION 
 BEGIN TRY
 -- /////////////////////////////////////////////////////////////////////
-
 		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
 																'HEADER_PURCHASE_ORDER', 'K_HEADER_PURCHASE_ORDER',
 																@OU_K_TABLA_DISPONIBLE = @VP_K_HEADER_PURCHASE_ORDER	OUTPUT
-
 	-- /////////////////////////////////////////////////////////////////////
-	--IF @VP_MENSAJE=''
-	--	EXECUTE [dbo].[PG_RN_HEADER_PURCHASE_ORDER_UNIQUE]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-	--											@VP_K_HEADER_PURCHASE_ORDER, 
-	--											@PP_D_HEADER_PURCHASE_ORDER, @PP_RFC_HEADER_PURCHASE_ORDER,
-	--											@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT	
+	--SET @VP_K_PO = @VP_K_HEADER_PURCHASE_ORDER + 8006	-- VALOR PARA PRUEBAS, SE ESTABLECE PARA NO INICIAR LAS PO EN 1
 	-- //////////////////////////////////////////////////////////////
-
 	IF @VP_MENSAJE=''
 	BEGIN		
 	--============================================================================
@@ -222,46 +325,54 @@ BEGIN TRY
 				-- ============================
 				[K_STATUS_PURCHASE_ORDER],				
 				-- ============================
-				[F_DATE_PURCHASE_ORDER],		[F_REQUIRED_PURCHASE_ORDER],			
+				[F_DATE_PURCHASE_ORDER],	[F_REQUIRED_PURCHASE_ORDER],			
 				-- ============================
 				[ISSUED_BY_PURCHASE_ORDER],	[REQUIRED_PURCHASE_ORDER],				
-				[K_PLACED_BY],
+				[K_PLACED_BY],				[K_APPROVED_BY],
 				-- ============================
-				[DELIVERY_TO],				[CONFIRMING_ORDER_WITH],				
+				[K_DELIVERY_TO],			[CONFIRMING_ORDER_WITH],				
 				[K_VENDOR],
 				-- ============================
 				[K_TERMS],					[K_CURRENCY],							
-				[TAX_RATE],					[ADDITIONAL_TAXES_PURCHASE_ORDER],		
-				[ADDITIONAL_DISCOUNTS_PURCHASE_ORDER],	
-				[PREPAID_PURCHASE_ORDER],				
+				[TAX_RATE],					--[ADDITIONAL_TAXES_PURCHASE_ORDER],		
+				--[ADDITIONAL_DISCOUNTS_PURCHASE_ORDER],	
+				--[PREPAID_PURCHASE_ORDER],				
 				-- ============================
-				[SUBTOTAL_PURCHASE_ORDER],	[TOTAL_PURCHASE_ORDER],				
+				[TOTAL_ITEMS],
+				[SUBTOTAL_PURCHASE_ORDER],	
+				[IVA_PURCHASE_ORDER],
+				[TOTAL_PURCHASE_ORDER],				
 				-- ============================
-				[ACCOUNT_PURCHASE_ORDER],
+				--[K_ACCOUNT_PURCHASE_ORDER],
 				-- ===========================
 				[K_USUARIO_ALTA], [F_ALTA], [K_USUARIO_CAMBIO], [F_CAMBIO],
 				[L_BORRADO], [K_USUARIO_BAJA], [F_BAJA]  )
 		VALUES	
-			(	@VP_K_HEADER_PURCHASE_ORDER, @PP_C_PURCHASE_ORDER, 
+			(	@VP_K_HEADER_PURCHASE_ORDER, 
+				--@VP_K_PO,		-- VALOR PARA PRUEBAS, SE ESTABLECE PARA NO INICIAR LAS PO EN 1
+				@PP_C_PURCHASE_ORDER, 
 				-- ============================
-				@PP_K_STATUS_PURCHASE_ORDER,				
+				1, --@PP_K_STATUS_PURCHASE_ORDER,				
 				-- ============================
-				@PP_F_DATE_PURCHASE_ORDER,		@PP_F_REQUIRED_PURCHASE_ORDER,			
+				@PP_F_DATE_PURCHASE_ORDER,		@PP_F_REQUIRED_PURCHASE_ORDER,
 				-- ============================
 				@PP_ISSUED_BY_PURCHASE_ORDER,	@PP_REQUIRED_PURCHASE_ORDER,				
-				@PP_K_PLACED_BY,
+				@PP_K_PLACED_BY,				@PP_K_APPROVED_BY,
 				-- ============================
-				@PP_DELIVERY_TO,				@PP_CONFIRMING_ORDER_WITH,				
+				@PP_K_DELIVERY_TO,				@PP_CONFIRMING_ORDER_WITH,				
 				@PP_K_VENDOR,
 				-- ============================
 				@PP_K_TERMS,					@PP_K_CURRENCY,							
-				@PP_TAX_RATE,					@PP_ADDITIONAL_TAXES_PURCHASE_ORDER,		
-				@PP_ADDITIONAL_DISCOUNTS_PURCHASE_ORDER,	
-				@PP_PREPAID_PURCHASE_ORDER,				
+				(@PP_TAX_RATE/100),					--0, --@PP_ADDITIONAL_TAXES_PURCHASE_ORDER,		
+				--0, --@PP_ADDITIONAL_DISCOUNTS_PURCHASE_ORDER,	
+				--0, --@PP_PREPAID_PURCHASE_ORDER,				
 				-- ============================
-				@PP_SUBTOTAL_PURCHASE_ORDER,	@PP_TOTAL_PURCHASE_ORDER,				
+				@PP_TOTAL_ITEMS,
+				@PP_SUBTOTAL_PURCHASE_ORDER,	
+				@PP_IVA_PURCHASE_ORDER,
+				@PP_TOTAL_PURCHASE_ORDER,				
 				-- ============================
-				@PP_ACCOUNT_PURCHASE_ORDER,
+				--0, --@PP_K_ACCOUNT_PURCHASE_ORDER,
 				-- ============================
 				@PP_K_USUARIO_ACCION, GETDATE(), @PP_K_USUARIO_ACCION, GETDATE(),
 				0, NULL, NULL  )
@@ -270,9 +381,18 @@ BEGIN TRY
 				BEGIN
 					--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
 					SET @VP_MENSAJE='The HEADER_PURCHASE_ORDER was not inserted. [HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@VP_K_HEADER_PURCHASE_ORDER)+']'
-				END
-				
---	RAISERROR ('ERROR DE PRUEBAS 3', 16, 1 ) --MENSAJE - Severity -State.
+					RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
+				END				
+	END
+
+	IF @VP_MENSAJE=''
+	BEGIN
+		EXECUTE		[dbo].[PG_IN_DETAILS_PURCHASE_ORDER]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+															-----=====================================================
+															@VP_K_HEADER_PURCHASE_ORDER,
+															--@VP_K_PO,		-- VALOR PARA PRUEBAS, SE ESTABLECE PARA NO INICIAR LAS PO EN 1
+															@PP_ITEM_ARRAY,		@PP_QUANTITY_ARRAY,
+															@PP_PRICE_ARRAY,	@PP_TOTAL_ARRAY
 	END
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
@@ -285,76 +405,106 @@ BEGIN CATCH
 	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
 	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
 END CATCH	
-
 	-- /////////////////////////////////////////////////////////////////////	
 	IF @VP_MENSAJE<>''
 	BEGIN
 		SET		@VP_MENSAJE = 'Not is possible [Insert] at [HEADER_PURCHASE_ORDER]: ' + @VP_MENSAJE 
 	END
-
 	SELECT	@VP_MENSAJE AS MENSAJE, @VP_K_HEADER_PURCHASE_ORDER AS CLAVE
 	-- //////////////////////////////////////////////////////////////
 GO
 
 
-
 -- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE 
--- // INSERTA UN DATATABLE QUE SE RECIBE DEL FRONT Y LO ASIGNA 
--- // A LA TABLA QUE SE UTILIZARÁ COMO TEMPORAL.
--- // ESTA TABLA UNA VEZ QUE SE REALICE EL INSERT DE LOS DATOS
--- // SERÁ ELIMINADA.
+-- // PARA INSERTAR LOS DETALLES DE LA ORDEN DE COMPRA
+-- // STORED PROCEDURE ---> SELECT / FICHA
 -- //////////////////////////////////////////////////////////////
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_TEMP_DETAILS_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_IN_TEMP_DETAILS_PURCHASE_ORDER]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_DETAILS_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_IN_DETAILS_PURCHASE_ORDER]
 GO
 
--- EXECUTE [dbo].[PG_IN_TEMP_DETAILS_PURCHASE_ORDER] 0,139,2
-CREATE PROCEDURE [dbo].[PG_IN_TEMP_DETAILS_PURCHASE_ORDER]
-	@TBL_DATA_TABLE			NVARCHAR
+CREATE PROCEDURE [dbo].[PG_IN_DETAILS_PURCHASE_ORDER]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO_ACCION		INT,
+	-----=====================================================
+	@PP_K_HEADER_PURCHASE_ORDER				INT,
+	@PP_ITEM_ARRAY							NVARCHAR(MAX),
+	@PP_QUANTITY_ARRAY						NVARCHAR(MAX),
+	@PP_PRICE_ARRAY							NVARCHAR(MAX),
+	@PP_TOTAL_ARRAY							NVARCHAR(MAX)
+	-----=====================================================
 AS
-DECLARE @VP_MENSAJE VARCHAR(250)
-BEGIN TRANSACTION 
-BEGIN TRY
-	  --SET NOCOUNT ON;
-     
-      INSERT INTO TEMP_DETAILS_PURCHASE_ORDER
-		(
-		[K_HEADER_PURCHASE_ORDER]		,
-		-- ============================	,
-		[K_ITEM]						--,		
-		--[QUANTITY_ORDER]				,		
-		--[K_UNIT_OF_ITEM]				,		
-		--[PART_NUMBER_ITEM_VENDOR]		,		
-		--[PART_NUMBER_ITEM_PEARL]		,		
-		---- ============================	,
-		--[UNIT_PRICE]					,		
-		--[TOTAL_PRICE]							
-		)
-      --SELECT K_PURCHASE_ORDER, K_ITEM FROM @TBL_DATA_TABLE
-	  SELECT K_VENDOR,K_VENDOR FROM VENDOR
-
-	  IF @@ROWCOUNT = 0
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''
+	-----=====================================================				
+	DECLARE @VP_K_DETAIL_PO	INT = 1
+	
+	DECLARE @VP_POSICION_ITEM	INT
+	DECLARE @VP_POSICION_QTY	INT 
+	DECLARE @VP_POSICION_PRICE	INT 
+	DECLARE @VP_POSICION_TOTAL	INT
+	DECLARE @VP_VALOR_ITEM		VARCHAR(500)
+	DECLARE @VP_VALOR_QTY		VARCHAR(500)
+	DECLARE @VP_VALOR_PRICE		VARCHAR(500)
+	DECLARE @VP_VALOR_TOTAL		VARCHAR(500)
+					
+	--Colocamos un separador al final de los parametros para que funcione bien nuestro codigo
+	SET	@PP_ITEM_ARRAY		= @PP_ITEM_ARRAY		+ '/'
+	SET	@PP_QUANTITY_ARRAY	= @PP_QUANTITY_ARRAY	+ '/'
+	SET	@PP_PRICE_ARRAY		= @PP_PRICE_ARRAY		+ '/'
+	SET	@PP_TOTAL_ARRAY		= @PP_TOTAL_ARRAY		+ '/'
+	
+	--Hacemos un bucle que se repite mientras haya separadores, patindex busca un patron en una cadena y nos devuelve su posicion
+	WHILE patindex('%/%' , @PP_ITEM_ARRAY) <> 0
 		BEGIN
-		DECLARE @VP_ERROR_1 VARCHAR(250)='The TABLE was not updated.[TEMP_DETAILS_PURCHASE_ORDER]'
-			RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-		END			
-COMMIT TRANSACTION 
-END TRY
+			SELECT @VP_POSICION_ITEM	=	patindex('%/%' , @PP_ITEM_ARRAY		)
+			SELECT @VP_POSICION_QTY		=	patindex('%/%' , @PP_QUANTITY_ARRAY	)
+			SELECT @VP_POSICION_PRICE	=	patindex('%/%' , @PP_PRICE_ARRAY	)
+			SELECT @VP_POSICION_TOTAL	=	patindex('%/%' , @PP_TOTAL_ARRAY	)
 
-BEGIN CATCH
-	ROLLBACK TRANSACTION
-	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
-	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
-	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
-END CATCH
+			--Buscamos la posicion de la primera y obtenemos los caracteres hasta esa posicion
+			SELECT @VP_VALOR_ITEM		= LEFT(@PP_ITEM_ARRAY		, @VP_POSICION_ITEM		- 1)
+			SELECT @VP_VALOR_QTY		= LEFT(@PP_QUANTITY_ARRAY	, @VP_POSICION_QTY		- 1)
+			SELECT @VP_VALOR_PRICE		= LEFT(@PP_PRICE_ARRAY		, @VP_POSICION_PRICE	- 1)
+			SELECT @VP_VALOR_TOTAL		= LEFT(@PP_TOTAL_ARRAY		, @VP_POSICION_TOTAL	- 1)
+		
+					INSERT INTO DETAILS_PURCHASE_ORDER
+						(
+						[K_HEADER_PURCHASE_ORDER]		,
+						[K_DETAILS_PURCHASE_ORDER]		,
+						-- ============================	,
+						[K_ITEM],			[QUANTITY_ORDER],
+						-- ============================
+						[UNIT_PRICE],		[TOTAL_PRICE]
+						)
+					VALUES
+						(
+						@PP_K_HEADER_PURCHASE_ORDER,
+						@VP_K_DETAIL_PO,
+						@VP_VALOR_ITEM,		@VP_VALOR_QTY,	
+						@VP_VALOR_PRICE,	@VP_VALOR_TOTAL
+						)																		
+													
+			IF @@ROWCOUNT = 0
+				BEGIN
+					--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
+					SET @VP_MENSAJE='The DETAIL_PURCHASE_ORDER was not inserted. [DETAIL#'+CONVERT(VARCHAR(10),@VP_VALOR_ITEM)+']'
+					RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
+				END	
 
-SELECT @VP_MENSAJE AS MENSAJE
-	-- ////////////////////////////////////////////////////////////////////
+			--Reemplazamos lo procesado con nada con la funcion stuff
+			SELECT @PP_ITEM_ARRAY		= STUFF(@PP_ITEM_ARRAY		, 1, @VP_POSICION_ITEM , '')
+			SELECT @PP_QUANTITY_ARRAY	= STUFF(@PP_QUANTITY_ARRAY	, 1, @VP_POSICION_QTY  , '')
+			SELECT @PP_PRICE_ARRAY		= STUFF(@PP_PRICE_ARRAY		, 1, @VP_POSICION_PRICE, '')
+			SELECT @PP_TOTAL_ARRAY		= STUFF(@PP_TOTAL_ARRAY		, 1, @VP_POSICION_TOTAL, '')
+
+			SET @VP_K_DETAIL_PO += 1
+		END
+	-- ////////////////////////////////////////////////////////////////
+	-- ///////////////////////////////////////////////////////////////
 GO
 
-/*
+
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> UPDATE / FICHA
 -- //////////////////////////////////////////////////////////////
@@ -377,130 +527,106 @@ CREATE PROCEDURE [dbo].[PG_UP_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
-	@PP_K_HEADER_PURCHASE_ORDER					INT,
-	@PP_D_HEADER_PURCHASE_ORDER					VARCHAR(250),
-	@PP_C_HEADER_PURCHASE_ORDER					VARCHAR(255),
-	-- ===========================
-	@PP_RFC_HEADER_PURCHASE_ORDER					VARCHAR(13),
-	@PP_EMAIL						VARCHAR(100),
-	@PP_PHONE						VARCHAR(100),
-	@PP_N_CREDIT_DAYS				INT,
-	-- ===========================
-	@PP_K_STATUS_HEADER_PURCHASE_ORDER				INT,
-	@PP_K_CATEGORY_HEADER_PURCHASE_ORDER			INT,
-	-- ============================-- ============================
-	@PP_K_ADDRESS_HEADER_PURCHASE_ORDER			INT,
-	@PP_D_ADDRESS_HEADER_PURCHASE_ORDER_1			VARCHAR (255) ,	-- STREET
-	@PP_D_ADDRESS_HEADER_PURCHASE_ORDER_2			VARCHAR (255) ,	-- COLONY, FRACC, 
+	@PP_K_HEADER_PURCHASE_ORDER		[INT],
+	@PP_C_PURCHASE_ORDER			[VARCHAR](255),
 	-- ============================
-	@PP_CITY						VARCHAR (100) ,
-	@PP_STATE_GEO					VARCHAR (100),
-	@PP_POSTAL_CODE					VARCHAR (10),
-	@PP_NUMBER_EXTERIOR				VARCHAR (10),
-	@PP_NUMBER_INSIDE				VARCHAR (10),
-	-- ============================-- ============================
-	@PP_K_CONTACT_HEADER_PURCHASE_ORDER			INT,
-	@PP_1_FIRST_NAME				VARCHAR(255),
-	@PP_1_MIDDLE_NAME				VARCHAR(255),
-	@PP_2_FIRST_NAME				VARCHAR(255),
-	@PP_2_MIDDLE_NAME				VARCHAR(255)
-	-- ============================				
---	,@PP_1_EMAIL						VARCHAR(100),
---	@PP_1_PHONE						VARCHAR(25)	,
---	@PP_2_EMAIL						VARCHAR(100),
---	@PP_2_PHONE						VARCHAR(25)	
+	@PP_F_DATE_PURCHASE_ORDER		[DATE],
+	@PP_F_REQUIRED_PURCHASE_ORDER	[DATE],
+	-- ============================
+	@PP_ISSUED_BY_PURCHASE_ORDER	[VARCHAR] (150),
+	@PP_REQUIRED_PURCHASE_ORDER		[VARCHAR] (150),
+	@PP_K_PLACED_BY					[INT],
+	@PP_K_APPROVED_BY				[INT],
+	-- ============================
+	@PP_K_DELIVERY_TO				[INT],
+	@PP_CONFIRMING_ORDER_WITH		[VARCHAR] (150),
+	@PP_K_VENDOR					[INT],
+	-- ============================
+	@PP_K_TERMS						[INT],
+	@PP_K_CURRENCY					[INT],
+	@PP_TAX_RATE					[DECIMAL] (10,4),
+	-- ============================
+	@PP_SUBTOTAL_PURCHASE_ORDER		[DECIMAL] (10,4),
+	@PP_IVA_PURCHASE_ORDER			[DECIMAL] (10,4),
+	@PP_TOTAL_PURCHASE_ORDER		[DECIMAL] (10,4),
+	-----=====================================================
+	@PP_ITEM_ARRAY					NVARCHAR(MAX),
+	@PP_QUANTITY_ARRAY				NVARCHAR(MAX),
+	@PP_PRICE_ARRAY					NVARCHAR(MAX),
+	@PP_TOTAL_ARRAY					NVARCHAR(MAX),
+	-----=====================================================
+	@PP_TOTAL_ITEMS					[INT]
 AS			
 DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 BEGIN TRANSACTION 
 BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////
 	IF @VP_MENSAJE=''
-		EXECUTE [dbo].[PG_RN_HEADER_PURCHASE_ORDER_UPDATE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_HEADER_PURCHASE_ORDER, 
-												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+	BEGIN
+		EXECUTE [dbo].[PG_RN_PURCHASE_ORDER_UPDATE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+														@PP_K_HEADER_PURCHASE_ORDER, 
+														@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+	END
 	-- /////////////////////////////////////////////////////////////////////
-	IF @VP_MENSAJE=''
-		EXECUTE [dbo].[PG_RN_HEADER_PURCHASE_ORDER_UNIQUE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_HEADER_PURCHASE_ORDER,@PP_D_HEADER_PURCHASE_ORDER, @PP_RFC_HEADER_PURCHASE_ORDER,
-												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
-	-- /////////////////////////////////////////////////////////////////////
-	
+--	IF @VP_MENSAJE=''
+--		EXECUTE [dbo].[PG_RN_HEADER_PURCHASE_ORDER_UNIQUE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+--																@PP_K_HEADER_PURCHASE_ORDER,@PP_D_HEADER_PURCHASE_ORDER, 
+--																@PP_RFC_HEADER_PURCHASE_ORDER,
+--																@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+	-- /////////////////////////////////////////////////////////////////////	
 	IF @VP_MENSAJE=''
 	BEGIN
 		UPDATE	HEADER_PURCHASE_ORDER
 		SET		
-				[D_HEADER_PURCHASE_ORDER]						= @PP_D_HEADER_PURCHASE_ORDER,
-				[C_HEADER_PURCHASE_ORDER]						= @PP_C_HEADER_PURCHASE_ORDER,
-				-- ========================== -- ===========================
-				[BUSINESS_NAME]					= @PP_D_HEADER_PURCHASE_ORDER,				--@PP_BUSINESS_NAME,
-				[RFC_HEADER_PURCHASE_ORDER]					= @PP_RFC_HEADER_PURCHASE_ORDER,
-				[EMAIL]							= @PP_EMAIL,
-				[PHONE]							= @PP_PHONE,
-				[N_CREDIT_DAYS]					= @PP_N_CREDIT_DAYS,
-				-- ========================== -- ===========================
-				[K_STATUS_HEADER_PURCHASE_ORDER]				= @PP_K_STATUS_HEADER_PURCHASE_ORDER,
-				[K_CATEGORY_HEADER_PURCHASE_ORDER]				= @PP_K_CATEGORY_HEADER_PURCHASE_ORDER,		
-				-- ========================== -- ============================
+				[K_HEADER_PURCHASE_ORDER]		= @PP_K_HEADER_PURCHASE_ORDER,				
+				[C_PURCHASE_ORDER]				= @PP_C_PURCHASE_ORDER,					
+				-- ============================	= -- ============================
+				[F_DATE_PURCHASE_ORDER]			= @PP_F_DATE_PURCHASE_ORDER,				
+				[F_REQUIRED_PURCHASE_ORDER]		= @PP_F_REQUIRED_PURCHASE_ORDER,		
+				-- ============================	= -- ============================		
+				[ISSUED_BY_PURCHASE_ORDER]		= @PP_ISSUED_BY_PURCHASE_ORDER,			
+				[REQUIRED_PURCHASE_ORDER]		= @PP_REQUIRED_PURCHASE_ORDER,				
+				[K_PLACED_BY]					= @PP_K_PLACED_BY,
+				[K_APPROVED_BY]					= @PP_K_APPROVED_BY,
+				-- ============================	= -- ============================		
+				[K_DELIVERY_TO]					= @PP_K_DELIVERY_TO,						
+				[CONFIRMING_ORDER_WITH]			= @PP_CONFIRMING_ORDER_WITH,				
+				[K_VENDOR]						= @PP_K_VENDOR,							
+				-- ============================	= -- ============================		
+				[K_TERMS]						= @PP_K_TERMS,								
+				[K_CURRENCY]					= @PP_K_CURRENCY,							
+				[TAX_RATE]						= (@PP_TAX_RATE/100),							
+				-- ============================	= -- ============================		
+				[TOTAL_ITEMS]					= @PP_TOTAL_ITEMS,							
+				[SUBTOTAL_PURCHASE_ORDER]		= @PP_SUBTOTAL_PURCHASE_ORDER,				
+				[IVA_PURCHASE_ORDER]			= @PP_IVA_PURCHASE_ORDER,					
+				[TOTAL_PURCHASE_ORDER]			= @PP_TOTAL_PURCHASE_ORDER,				
+				-- ============================	= -- ============================
 				[F_CAMBIO]						= GETDATE(), 
 				[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
 		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
 		IF @@ROWCOUNT = 0
 			BEGIN
 				SET @VP_MENSAJE='The HEADER_PURCHASE_ORDER was not updated. [HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+				RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
 			END
-		
-		IF @VP_MENSAJE=''
-		BEGIN
-			UPDATE	ADDRESS_HEADER_PURCHASE_ORDER
-			SET
-					[D_ADDRESS_HEADER_PURCHASE_ORDER_1]		= @PP_D_ADDRESS_HEADER_PURCHASE_ORDER_1	,	
-					[D_ADDRESS_HEADER_PURCHASE_ORDER_2]		= @PP_D_ADDRESS_HEADER_PURCHASE_ORDER_2	,		
-					[C_ADDRESS_HEADER_PURCHASE_ORDER]			= @PP_D_HEADER_PURCHASE_ORDER				,	
-					-- =======================	= -- =========================
-					[CITY]						= @PP_CITY			,		
-					[STATE_GEO]					= @PP_STATE_GEO		,
-					[POSTAL_CODE]				= @PP_POSTAL_CODE		,		
-					[NUMBER_EXTERIOR]			= @PP_NUMBER_EXTERIOR	,		
-					[NUMBER_INSIDE]				= @PP_NUMBER_INSIDE	,		
-					-- ========================== -- ============================
-					[F_CAMBIO]					= GETDATE(), 
-					[K_USUARIO_CAMBIO]			= @PP_K_USUARIO_ACCION
-			WHERE	[K_ADDRESS_HEADER_PURCHASE_ORDER]=@PP_K_ADDRESS_HEADER_PURCHASE_ORDER			
-			AND		[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
-			IF @@ROWCOUNT = 0
-				BEGIN
-				DECLARE @VP_ERROR_1 VARCHAR(250)='The address was not updated.[HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+' //ADDRESS#'+CONVERT(VARCHAR(10),@PP_K_ADDRESS_HEADER_PURCHASE_ORDER)+']'
-					RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-				END
-		END
-
-		IF @VP_MENSAJE=''
-		BEGIN
-			UPDATE	CONTACT_HEADER_PURCHASE_ORDER
-			SET													
-					[1_FIRST_NAME]					= @PP_1_FIRST_NAME		,
-					[1_MIDDLE_NAME]					= @PP_1_MIDDLE_NAME		,		
-					[2_FIRST_NAME]					= @PP_2_FIRST_NAME		,		
-					[2_MIDDLE_NAME]					= @PP_2_MIDDLE_NAME		,		
-					[C_CONTACT_HEADER_PURCHASE_ORDER]				= @PP_D_HEADER_PURCHASE_ORDER			,		
-					-- ========================== -- ============================
---					[1_EMAIL]						= @PP_1_EMAIL			,			
---					[1_PHONE]						= @PP_1_PHONE			,			
---					[2_EMAIL]						= @PP_2_EMAIL			,			
---					[2_PHONE]						= @PP_2_PHONE			,		
-					-- ========================== -- ============================
-					[F_CAMBIO]						= GETDATE()				, 
-					[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
-			WHERE	[K_CONTACT_HEADER_PURCHASE_ORDER]=@PP_K_CONTACT_HEADER_PURCHASE_ORDER			
-			AND		[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
-			IF @@ROWCOUNT = 0
-				BEGIN
-				DECLARE @VP_ERROR_2 VARCHAR(250)='The contact was not updated.[HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+' //CONTACT# '+CONVERT(VARCHAR(10),@PP_K_CONTACT_HEADER_PURCHASE_ORDER)+']'
-					RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
-				END
-		END	
 	END
---	RAISERROR ('ERROR DE PRUEBAS 3', 16, 1 ) --MENSAJE - Severity -State.
+		
+	IF @VP_MENSAJE=''
+	BEGIN
+		DELETE 
+		FROM	DETAILS_PURCHASE_ORDER
+		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
+	END
+
+	IF @VP_MENSAJE=''
+	BEGIN
+		EXECUTE		[dbo].[PG_IN_DETAILS_PURCHASE_ORDER]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+															-----=====================================================
+															@PP_K_HEADER_PURCHASE_ORDER,
+															@PP_ITEM_ARRAY,		@PP_QUANTITY_ARRAY,
+															@PP_PRICE_ARRAY,	@PP_TOTAL_ARRAY
+	END
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY
@@ -511,7 +637,6 @@ BEGIN CATCH
 	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
 	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
 END CATCH	
-
 	-- /////////////////////////////////////////////////////////////////////	
 	IF @VP_MENSAJE<>''
 	BEGIN
@@ -519,46 +644,35 @@ END CATCH
 	END
 
 	SELECT	@VP_MENSAJE AS MENSAJE, @PP_K_HEADER_PURCHASE_ORDER AS CLAVE
-	-- //////////////////////////////////////////////////////////////
-	
+	-- //////////////////////////////////////////////////////////////	
 GO
 
 
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> DELETE / FICHA
 -- //////////////////////////////////////////////////////////////
-
 --	EXECUTE [dbo].[PG_DL_HEADER_PURCHASE_ORDER] 0,139,380,2,2
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_DL_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_DL_HEADER_PURCHASE_ORDER]
 GO
-
 CREATE PROCEDURE [dbo].[PG_DL_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
-	@PP_K_HEADER_PURCHASE_ORDER					INT
+	@PP_K_HEADER_PURCHASE_ORDER		INT
 AS
 DECLARE @VP_MENSAJE				VARCHAR(300) = ''
-DECLARE @PP_K_ADDRESS_HEADER_PURCHASE_ORDER			INT
-DECLARE @PP_K_CONTACT_HEADER_PURCHASE_ORDER			INT
 BEGIN TRANSACTION 
 BEGIN TRY
 --/////////////////////////////////////////////////////////////
 	IF @VP_MENSAJE=''
-		EXECUTE [dbo].[PG_RN_HEADER_PURCHASE_ORDER_DELETE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_HEADER_PURCHASE_ORDER, 
-												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+	BEGIN
+		EXECUTE [dbo].[PG_RN_PURCHASE_ORDER_DELETE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+														@PP_K_HEADER_PURCHASE_ORDER, 
+														@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+	END
 	--////////////////////////////////////////////////////////////
 	IF @VP_MENSAJE=''
-	
-	SELECT	@PP_K_ADDRESS_HEADER_PURCHASE_ORDER=K_ADDRESS_HEADER_PURCHASE_ORDER,
-			@PP_K_CONTACT_HEADER_PURCHASE_ORDER=K_CONTACT_HEADER_PURCHASE_ORDER
-	FROM	HEADER_PURCHASE_ORDER
-	LEFT JOIN ADDRESS_HEADER_PURCHASE_ORDER ON HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER= ADDRESS_HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER
-	LEFT JOIN CONTACT_HEADER_PURCHASE_ORDER ON HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER= CONTACT_HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER
-	WHERE HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	
 	BEGIN		
 		UPDATE	HEADER_PURCHASE_ORDER
 		SET		
@@ -571,37 +685,6 @@ BEGIN TRY
 			BEGIN
 				SET @VP_MENSAJE='The HEADER_PURCHASE_ORDER was not updated. [HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
 			END
-		IF @VP_MENSAJE=''
-		BEGIN		
-			UPDATE	ADDRESS_HEADER_PURCHASE_ORDER
-			SET		
-					[L_BORRADO]				= 1,
-					-- ====================
-					[F_BAJA]				= GETDATE(), 
-					[K_USUARIO_BAJA]		= @PP_K_USUARIO_ACCION
-			WHERE	K_ADDRESS_HEADER_PURCHASE_ORDER=@PP_K_ADDRESS_HEADER_PURCHASE_ORDER
-			IF @@ROWCOUNT = 0
-				BEGIN
-				DECLARE @VP_ERROR_1 VARCHAR(250)='The address was not deleted.[HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+' //ADDRESS#'+CONVERT(VARCHAR(10),@PP_K_ADDRESS_HEADER_PURCHASE_ORDER)+']'
-					RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-				END
-		END
-
-		IF @VP_MENSAJE=''
-		BEGIN		
-			UPDATE	CONTACT_HEADER_PURCHASE_ORDER
-			SET		
-					[L_BORRADO]				= 1,
-					-- ====================
-					[F_BAJA]				= GETDATE(), 
-					[K_USUARIO_BAJA]		= @PP_K_USUARIO_ACCION
-			WHERE	K_CONTACT_HEADER_PURCHASE_ORDER=@PP_K_CONTACT_HEADER_PURCHASE_ORDER		
-			IF @@ROWCOUNT = 0
-				BEGIN
-				DECLARE @VP_ERROR_2 VARCHAR(250)='The contact was not updated.[HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+' //CONTACT#'+CONVERT(VARCHAR(10),@PP_K_CONTACT_HEADER_PURCHASE_ORDER)+']'
-					RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
-				END
-		END	
 	END
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
@@ -625,7 +708,131 @@ END CATCH
 	
 	-- //////////////////////////////////////////////////////////////	
 GO
-*/
+
+-- //////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////
+
+-- // A PARTIR DE AQUÍ VAN LOS SP PARA LA REVISIÓN DE STATUS DE LAS PO
+
+-- //////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> REVIEW_ESTATUS
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_PERMISOS_PO]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_SK_PERMISOS_PO]
+GO
+--		 EXECUTE [dbo].[PG_SK_PERMISOS_PO] 0,139,6002
+CREATE PROCEDURE [dbo].[PG_SK_PERMISOS_PO]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_K_GRUPO_APROBADOR			INT
+AS
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
+	-- ///////////////////////////////////////////		
+	SELECT		TOP (1)
+				COUNT(K_USUARIO)	AS AUTORIZADO
+				-- =============================	
+	FROM		BD_GENERAL.DBO.GRUPO_APROBADOR
+				-- =============================
+	WHERE		K_USUARIO=@PP_K_USUARIO_ACCION
+	AND			K_TIPO_GRUPO_APROBADOR=@PP_K_GRUPO_APROBADOR
+	AND			K_ESTATUS_GRUPO_APROBADOR=1
+	-- ////////////////////////////////////////////////////////////////////
+GO
+
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> REVIEW_ESTATUS
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_COMENTARIOS_LOG_PO]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_SK_COMENTARIOS_LOG_PO]
+GO
+-- EXECUTE [dbo].[PG_SK_COMENTARIOS_LOG_PO] 0,139,1
+CREATE PROCEDURE [dbo].[PG_SK_COMENTARIOS_LOG_PO]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_K_HEADER_PURCHASE_ORDER		INT
+AS
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
+	-- ///////////////////////////////////////////			
+	SELECT		TOP (1)
+				PO_COMENTARIO_LOG.K_HEADER_PURCHASE_ORDER,
+				C_PO_COMENTARIO_LOG
+				-- =============================	
+	FROM		HEADER_PURCHASE_ORDER,
+				PO_COMENTARIO_LOG
+				-- =============================
+	WHERE		PO_COMENTARIO_LOG.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
+	AND			HEADER_PURCHASE_ORDER.L_BORRADO<>1		
+	-- ////////////////////////////////////////////////////////////////////
+GO
+
+-- //////////////////////////////////////////////////////////////
+-- // PARA INSERTAR LOS COMENTARIOS EN EL LOG DE COMENTARIOS DE LA PO
+-- // STORED PROCEDURE ---> INSERT / FICHA
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_COMENTARIOS_LOG_PO]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_IN_COMENTARIOS_LOG_PO]
+GO
+CREATE PROCEDURE [dbo].[PG_IN_COMENTARIOS_LOG_PO]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_K_HEADER_PURCHASE_ORDER		[INT],
+	@PP_C_PO_COMENTARIO_LOG			[VARCHAR](255)
+AS			
+DECLARE @VP_MENSAJE				VARCHAR(500) = ''
+DECLARE @VP_K_HEADER_PURCHASE_ORDER			INT = 0;		
+DECLARE @VP_K_PO			INT = 0;		
+BEGIN TRANSACTION 
+BEGIN TRY
+-- /////////////////////////////////////////////////////////////////////
+	IF @VP_MENSAJE=''
+	BEGIN		
+		INSERT	INTO PO_COMENTARIO_LOG 
+		(	[K_HEADER_PURCHASE_ORDER]
+			,[C_PO_COMENTARIO_LOG]
+			,[K_USUARIO]
+			,[F_COMENTARIO]				)
+		VALUES	
+		(	@PP_K_HEADER_PURCHASE_ORDER,
+			@PP_K_USUARIO_ACCION,
+			@PP_C_PO_COMENTARIO_LOG,
+			GETDATE()					)
+
+			IF @@ROWCOUNT = 0
+				BEGIN
+					--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
+					SET @VP_MENSAJE='The COMMENT was not inserted. [HEADER_PURCHASE_ORDER#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+					RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
+				END				
+	END
+-- /////////////////////////////////////////////////////////////////////
+COMMIT TRANSACTION 
+END TRY
+
+BEGIN CATCH
+	/* Ocurrió un error, deshacemos los cambios*/ 
+	ROLLBACK TRANSACTION
+	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
+	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
+	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
+END CATCH	
+	-- /////////////////////////////////////////////////////////////////////	
+	IF @VP_MENSAJE<>''
+	BEGIN
+		SET		@VP_MENSAJE = 'Not is possible [Insert] at [COMMENT_HEADER_PURCHASE_ORDER]: ' + @VP_MENSAJE 
+	END
+	SELECT	@VP_MENSAJE AS MENSAJE, @PP_K_HEADER_PURCHASE_ORDER AS CLAVE
+	-- //////////////////////////////////////////////////////////////
+GO
+
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
