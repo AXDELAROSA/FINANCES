@@ -24,18 +24,25 @@ CREATE PROCEDURE [dbo].[PG_RN_ITEM_UNIQUE]
 	@PP_K_ITEM							[INT],	
 	@PP_D_ITEM							[VARCHAR] (100),
 		-- ===========================		
+	@PP_PART_NUMBER_ITEM_VENDOR			[VARCHAR] (100),
+	@PP_PART_NUMBER_ITEM_PEARL			[VARCHAR] (100),
+		-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
 	DECLARE @VP_RESULTADO				VARCHAR(300) = ''		
 	-- ///////////////////////////////////////////
 	IF @VP_RESULTADO=''
-		BEGIN	
-		DECLARE @VP_N_ITEM_X_D_ITEM		INT		
-		SELECT	@VP_N_ITEM_X_D_ITEM =		COUNT	(ITEM.K_ITEM)
-													FROM	ITEM
-													WHERE	ITEM.K_ITEM<>@PP_K_ITEM
-													AND		ITEM.K_VENDOR=@PP_K_VENDOR
-													AND		ITEM.D_ITEM=@PP_D_ITEM										
+	BEGIN	
+		DECLARE @VP_N_ITEM_X_D_ITEM			INT		
+		DECLARE @VP_N_ITEM_X_ITEM_VENDOR	INT		
+		DECLARE @VP_N_ITEM_X_ITEM_PEARL		INT		
+
+		SELECT	@VP_N_ITEM_X_D_ITEM		 =		COUNT	(ITEM.K_ITEM)
+												FROM	ITEM
+												WHERE	ITEM.K_ITEM<>@PP_K_ITEM
+												AND		ITEM.K_VENDOR=@PP_K_VENDOR
+												AND		ITEM.D_ITEM=@PP_D_ITEM
+
 		IF @VP_N_ITEM_X_D_ITEM>0
 		BEGIN
 			DECLARE @PP_D_VENDOR VARCHAR(250)
@@ -43,8 +50,41 @@ AS
 				FROM	VENDOR 
 				WHERE K_VENDOR=@PP_K_VENDOR
 
-				SET @VP_RESULTADO =  'There are already [ITEMS] with that Description ['+@PP_D_ITEM+']. In [VENDOR] ['+@PP_D_VENDOR+']' 		END
-	END			
+				SET @VP_RESULTADO =  'There are already [ITEMS] with that Description ['+@PP_D_ITEM+']. In [VENDOR] ['+@PP_D_VENDOR+']' 		
+		END
+		
+		IF @VP_RESULTADO=''
+		BEGIN
+			IF @PP_PART_NUMBER_ITEM_VENDOR<>''
+			BEGIN
+				SELECT	@VP_N_ITEM_X_ITEM_VENDOR =		COUNT	(ITEM.PART_NUMBER_ITEM_VENDOR)
+														FROM	ITEM
+														WHERE	ITEM.K_ITEM<>@PP_K_ITEM
+														AND		ITEM.PART_NUMBER_ITEM_VENDOR=@PP_PART_NUMBER_ITEM_VENDOR
+
+				IF @VP_N_ITEM_X_ITEM_VENDOR>0
+				BEGIN
+					SET @VP_RESULTADO =  'There are already [ITEMS] with that Item Vendor ['+@PP_PART_NUMBER_ITEM_VENDOR+']'
+				END
+			END
+		END
+
+		IF @VP_RESULTADO=''
+		BEGIN
+			IF @PP_PART_NUMBER_ITEM_PEARL<>''
+			BEGIN
+				SELECT	@VP_N_ITEM_X_ITEM_PEARL =		COUNT	(ITEM.PART_NUMBER_ITEM_PEARL)
+														FROM	ITEM
+														WHERE	ITEM.K_ITEM<>@PP_K_ITEM
+														AND		ITEM.PART_NUMBER_ITEM_PEARL=@PP_PART_NUMBER_ITEM_PEARL
+
+				IF @VP_N_ITEM_X_ITEM_PEARL>0
+				BEGIN
+					SET @VP_RESULTADO =  'There are already [ITEMS] with that Item Pearl ['+@PP_PART_NUMBER_ITEM_PEARL+']'
+				END
+			END
+		END		
+	END
 	-- ///////////////////////////////////////////		
 	IF	@VP_RESULTADO<>''
 		SET	@VP_RESULTADO = @VP_RESULTADO + ' //UNI//'	

@@ -148,9 +148,6 @@ ALTER TABLE [dbo].[PO_PRICE_LOG]
 		PRIMARY KEY CLUSTERED ([K_PO_PRICE_LOG])
 GO
 
---		ALTER TABLE [dbo].[PO_PRICE_LOG]										
---		ADD		[UNIT_PRICE_HISTORY]	[DECIMAL] (10,4) NOT NULL DEFAULT 0
---		GO																		
 -- //////////////////////////////////////////////////////////////
 -- // PUESTO_COMENTARIO_LOG
 -- //////////////////////////////////////////////////////////////
@@ -440,13 +437,6 @@ GO
 
 --	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
 --	ALTER COLUMN	[QUANTITY_ORDER]	[DECIMAL] (10,4)
---	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ALTER COLUMN	[QUANTITY_RECEIVED] [DECIMAL] (10,4)
---	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ALTER COLUMN	[QUANTITY_PENDING] [DECIMAL] (10,4)		
-
-
-
 --	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
 --	ADD	[K_PO_PRICE_LOG]	[INT]	NOT NULL DEFAULT 1	
 -- //////////////////////////////////////////////////////

@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200217
 -- ////////////////////////////////////////////////////////////// 
 
-USE [COMPRAS]
+--USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -88,7 +88,8 @@ GO
 
 
 -- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE ---> SELECT / LISTADO
+-- // STORED PROCEDURE ---> PARA MOSTRAR LOS ITEM EN LA CAPTURA 
+-- // DE LA PO
 -- //////////////////////////////////////////////////////////////
 
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_ITEM_PO]') AND type in (N'P', N'PC'))
@@ -101,7 +102,8 @@ CREATE PROCEDURE [dbo].[PG_LI_ITEM_PO]
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
 --	@PP_BUSCAR						VARCHAR(200),
-	@PP_K_VENDOR					INT
+	@PP_K_VENDOR					INT,
+	@PP_K_CURRENCY					INT
 AS
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 	DECLARE @VP_L_APLICAR_MAX_ROWS	INT=1		
@@ -140,14 +142,43 @@ AS
 	--			OR	ITEM.TRADEMARK_ITEM				LIKE '%'+@PP_BUSCAR+'%'
 	--			OR	ITEM.PRICE_ITEM					LIKE '%'+@PP_BUSCAR+'%' )
 				-- =============================
-	AND			( @PP_K_VENDOR	=-1			OR	VENDOR.K_VENDOR=@PP_K_VENDOR )
+	AND			( @PP_K_VENDOR	 =-1			OR	VENDOR.K_VENDOR=@PP_K_VENDOR )
+	AND			( @PP_K_CURRENCY =-1			OR	ITEM.K_CURRENCY=@PP_K_CURRENCY )
 	----AND			( @PP_K_STATUS_ITEM	=-1		OR	ITEM.K_STATUS_ITEM=@PP_K_STATUS_ITEM )
 	----AND			( @PP_K_TYPE_ITEM =-1		OR	ITEM.K_TYPE_ITEM=@PP_K_TYPE_ITEM )
-	----AND			( @PP_K_CURRENCY =-1		OR	ITEM.K_CURRENCY=@PP_K_CURRENCY )
 				-- =============================
 	AND			ITEM.L_BORRADO<>1
 	ORDER BY	K_VENDOR, D_ITEM,K_CURRENCY DESC
 	-- /////////////////////////////////////////////////////////////////////
+GO
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> PARA MOSTRAR EL HISTORIAL DE LOS PRECIOS
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_ITEM_PO_PRICE_LOG]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_LI_ITEM_PO_PRICE_LOG]
+GO	
+--		 EXECUTE [dbo].[PG_LI_ITEM_PO_PRICE_LOG] 0,139
+CREATE PROCEDURE [dbo].[PG_LI_ITEM_PO_PRICE_LOG]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT
+	-- ===========================
+AS
+	--	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
+	-- ////////////////////////////////////////////////////////////////////
+	SELECT		PO_PRICE_LOG.K_ITEM,
+				F_CHANGE_PRICE					AS F_CHANGE_PRICE,
+				PO_PRICE_LOG.UNIT_PRICE_HISTORY AS PRICE_RECORD,
+				PO_PRICE_LOG.UNIT_PRICE			AS PRICE_CURRENT,
+				D_ITEM,
+				D_USUARIO_PEARL					AS D_USUARIO
+	FROM		PO_PRICE_LOG
+	LEFT JOIN	BD_GENERAL.DBO.USUARIO_PEARL	ON	PO_PRICE_LOG.K_USUARIO=K_USUARIO_PEARL
+	LEFT JOIN	ITEM							ON	PO_PRICE_LOG.K_ITEM=ITEM.K_ITEM
+	WHERE		ITEM.L_BORRADO=0
+				
+	-- ////////////////////////////////////////////////////////////////////
 GO
 
 
@@ -157,7 +188,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_ITEM]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_ITEM]
 GO
--- EXECUTE [dbo].[PG_SK_ITEM] 0,139,24
+-- EXECUTE [dbo].[PG_SK_ITEM] 0,139,28
 CREATE PROCEDURE [dbo].[PG_SK_ITEM]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -175,6 +206,11 @@ AS
 				-- =============================
 				-- PARA INDICAR EL TOTAL DEL ITEM
 				CONVERT(VARCHAR, CAST(PRICE_ITEM AS MONEY), 1) AS TOTAL_ITEM,
+				-- =============================
+				( CASE
+					WHEN	[PART_NUMBER_ITEM_PEARL]='0'	THEN	''
+					ELSE	[PART_NUMBER_ITEM_PEARL]	END
+				)	AS PART_NUMBER_ITEM_PEARL,
 				-- =============================
 				1 as QUANTITY,
 				S_CURRENCY	,
@@ -198,17 +234,16 @@ AS
 	-- ////////////////////////////////////////////////////////////////////
 GO
 
-	
+
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> INSERT
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_ITEM]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_IN_ITEM]
 GO
--- SELECT * FROM VENDOR
--- EXECUTE [dbo].[PG_IN_ITEM] 0, 139,500,'TEST','750000000','0','LENOVO','THINK PAD',12500.50,1,1,8,1
--- EXECUTE [dbo].[PG_IN_ITEM] 0, 139, 1 , 'BOCINA BLUETOOTH' , '75363333666' , '0' , 'STEREN' , 'BEAT100' , '620.00' , 1 , 1 , 11 , 1 
---	EXECUTE [dbo].[PG_IN_ITEM] 0,139,  1 , 'BASE PARA MONITOR' , '754051541501' , '' , 'LG' , 'SATECHI' , '125' , 1 , 1 , 11 , 1 
+--	SELECT * FROM COMPRAS.DBO.ITEM
+--	SELECT * FROM ITEM
+--		 EXECUTE [dbo].[PG_IN_ITEM] 0,139,   1 , 'TRAPEADOR' , '' , '' , '' , '' , '1' , '45' , 1 , 1 , 11 , 1
 CREATE PROCEDURE [dbo].[PG_IN_ITEM]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -221,6 +256,8 @@ CREATE PROCEDURE [dbo].[PG_IN_ITEM]
 	-- ===========================
 	@PP_TRADEMARK_ITEM				VARCHAR(100),
 	@PP_MODEL_ITEM					VARCHAR(100),
+	-- ============================	
+	@PP_K_PO_PRICE					INT,
 	@PP_PRICE_ITEM					DECIMAL(10,4),
 	-- ===========================
 	@PP_K_STATUS_ITEM				INT,
@@ -234,9 +271,15 @@ AS
 BEGIN TRANSACTION 
 BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////
-	EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
+	DECLARE @VP_BD_NAME				VARCHAR(300) = ''
+	IF	@PP_K_SISTEMA_EXE=0
+		SET @VP_BD_NAME='COMPRAS_Pruebas'
+	ELSE
+		SET @VP_BD_NAME='COMPRAS'
+
+	EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, @VP_BD_NAME,
 																'ITEM', 'K_ITEM',
-																@OU_K_TABLA_DISPONIBLE = @VP_K_ITEM	OUTPUT														
+																@OU_K_TABLA_DISPONIBLE = @VP_K_ITEM	OUTPUT
 	-- /////////////////////////////////////////////////////////////////////
 	IF @VP_MENSAJE=''
 		EXECUTE [dbo].[PG_RN_VENDOR_INSERT]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
@@ -249,9 +292,12 @@ BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////	
 	IF @VP_MENSAJE=''
 		EXECUTE [dbo].[PG_RN_ITEM_UNIQUE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_VENDOR, @VP_K_ITEM, @PP_D_ITEM, 
+												@PP_K_VENDOR, @VP_K_ITEM, @PP_D_ITEM,
+												@PP_PART_NUMBER_ITEM_VENDOR,
+												@PP_PART_NUMBER_ITEM_PEARL,
 												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT	
 		-- //////////////////////////////////////////////////////////////
+
 	IF @VP_MENSAJE=''
 		BEGIN
 		IF @PP_PART_NUMBER_ITEM_PEARL=''
@@ -300,6 +346,26 @@ BEGIN TRY
 					RAISERROR (@VP_ERROR_2, 16, 1 )
 				END		
 		END
+
+		IF @VP_MENSAJE=''
+		BEGIN
+			INSERT INTO [PO_PRICE_LOG]
+			(	[K_PO_PRICE]			,
+				[K_ITEM]				,	[UNIT_PRICE]		,
+				[K_USUARIO]				,	[F_CHANGE_PRICE]
+			)
+			VALUES
+			(	@PP_K_PO_PRICE			,
+				@VP_K_ITEM				,	@PP_PRICE_ITEM		,
+				@PP_K_USUARIO_ACCION	,	GETDATE()
+			)
+
+			IF @@ROWCOUNT = 0
+			BEGIN
+				DECLARE @VP_ERROR_3 VARCHAR(250)='Price LOG error. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+				RAISERROR (@VP_ERROR_3, 16, 1 ) --MENSAJE - Severity -State.
+			END			
+		END
 	-- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY
@@ -345,6 +411,8 @@ CREATE PROCEDURE [dbo].[PG_UP_ITEM]
 	-- ===========================
 	@PP_TRADEMARK_ITEM				VARCHAR(100),
 	@PP_MODEL_ITEM					VARCHAR(100),
+	-- ============================	
+	@PP_K_PO_PRICE					INT,
 	@PP_PRICE_ITEM					DECIMAL(10,4),
 	-- ===========================
 	@PP_K_STATUS_ITEM				INT,
@@ -354,6 +422,7 @@ CREATE PROCEDURE [dbo].[PG_UP_ITEM]
 	@PP_K_CURRENCY					INT
 AS			
 DECLARE @VP_MENSAJE				VARCHAR(300) = ''
+DECLARE @VP_K_PRICE_LOG			INT
 BEGIN TRANSACTION 
 BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////
@@ -372,40 +441,108 @@ BEGIN TRY
 	IF @VP_MENSAJE=''
 		EXECUTE [dbo].[PG_RN_ITEM_UNIQUE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
 												@PP_K_VENDOR, @PP_K_ITEM, @PP_D_ITEM,
+												@PP_PART_NUMBER_ITEM_VENDOR,
+												@PP_PART_NUMBER_ITEM_PEARL,
 												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT	
 	-- /////////////////////////////////////////////////////////////////////	
+	--	PARA REALIZAR LA ACTUALIZACIÓN DEL LOG DE PRECIOS DE LOS ITEM
 	IF @VP_MENSAJE=''
 		BEGIN
-		UPDATE	ITEM
-		SET		
-				[K_VENDOR]						= @PP_K_VENDOR	,
-				[D_ITEM]						= @PP_D_ITEM	,
-				-- ==========================	-- ===========================
-				[PART_NUMBER_ITEM_VENDOR]		= @PP_PART_NUMBER_ITEM_VENDOR	,	
-				[PART_NUMBER_ITEM_PEARL]		= @PP_PART_NUMBER_ITEM_PEARL	,	
-				-- ==========================	-- ===========================
-				[TRADEMARK_ITEM]				= @PP_TRADEMARK_ITEM			,	
-				[MODEL_ITEM]					= @PP_MODEL_ITEM				,	
-				[PRICE_ITEM]					= @PP_PRICE_ITEM				,	
-				-- ==========================	-- ===========================
-				[K_STATUS_ITEM]					= @PP_K_STATUS_ITEM				,
-				[K_TYPE_ITEM]					= @PP_K_TYPE_ITEM				,	
-				[K_UNIT_OF_ITEM]				= @PP_K_UNIT_OF_ITEM			,	
-				-- ==========================	-- ============================
-				[K_CURRENCY]					= @PP_K_CURRENCY				,	
-				-- ====================		
-				[F_CAMBIO]						= GETDATE(), 
-				[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
-		WHERE	K_ITEM=@PP_K_ITEM
-	
-		IF @@ROWCOUNT = 0
-			BEGIN
-				DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
-				RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
-			END
-		
-		END
+			DECLARE @PP_PRICE_ITEM_ORIGINAL		[DECIMAL](10,4)
+			
+			SELECT	@PP_PRICE_ITEM_ORIGINAL=[PRICE_ITEM]
+			FROM	ITEM
+			WHERE	[K_ITEM]=@PP_K_ITEM
+	-- /////////////////////////////////////////////////////////////////////	
+	--	CUANDO SE DESEA CAMBIAR EL PROVEEDOR DE UN ARTÍCULO Y ESTE YA SE ENCUENTRA AGREGADO EN ALGUNA PO,
+	--	YA NO SE PUEDE ALTERAR SE DEBE CREAR UNO NUEVO PARA EL PROVEEDOR.
+	--IF @VP_MENSAJE=''
+	--	BEGIN
+			DECLARE @PP_EXISTE_ITEM		INT			
 
+			SELECT	@PP_EXISTE_ITEM=COUNT([K_ITEM])
+			FROM	DETAILS_PURCHASE_ORDER
+			WHERE	[K_ITEM]=@PP_K_ITEM		
+			
+			IF @PP_EXISTE_ITEM<0
+				BEGIN
+					UPDATE	ITEM
+					SET		
+							[K_VENDOR]						= @PP_K_VENDOR	,
+							[D_ITEM]						= @PP_D_ITEM	,
+							-- ==========================	-- ===========================
+							[PART_NUMBER_ITEM_VENDOR]		= @PP_PART_NUMBER_ITEM_VENDOR	,	
+							[PART_NUMBER_ITEM_PEARL]		= @PP_PART_NUMBER_ITEM_PEARL	,	
+							-- ==========================	-- ===========================
+							[TRADEMARK_ITEM]				= @PP_TRADEMARK_ITEM			,	
+							[MODEL_ITEM]					= @PP_MODEL_ITEM				,	
+							-- ==========================	-- ===========================
+							[K_PO_PRICE]					= @PP_K_PO_PRICE				,
+							[PRICE_ITEM]					= @PP_PRICE_ITEM				,	
+							-- ==========================	-- ===========================
+							[K_STATUS_ITEM]					= @PP_K_STATUS_ITEM				,
+							[K_TYPE_ITEM]					= @PP_K_TYPE_ITEM				,	
+							[K_UNIT_OF_ITEM]				= @PP_K_UNIT_OF_ITEM			,	
+							-- ==========================	-- ============================
+							[K_CURRENCY]					= @PP_K_CURRENCY				,	
+							-- ====================		
+							[F_CAMBIO]						= GETDATE(), 
+							[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
+					WHERE	K_ITEM=@PP_K_ITEM
+	
+					IF @@ROWCOUNT = 0
+						BEGIN
+							DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+							RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
+						END								
+				END				
+				ELSE IF @PP_PRICE_ITEM<>@PP_PRICE_ITEM_ORIGINAL	AND		@PP_EXISTE_ITEM>0
+				BEGIN
+					SELECT	TOP(1) @VP_K_PRICE_LOG = K_PO_PRICE
+					FROM		[PO_PRICE_LOG]
+					WHERE		K_ITEM=@PP_K_ITEM
+					ORDER BY	K_PO_PRICE	DESC
+					
+					SET @PP_K_PO_PRICE = @VP_K_PRICE_LOG+1			
+
+					INSERT INTO [PO_PRICE_LOG]
+					(	[K_PO_PRICE]			,
+						[K_ITEM]				,	[UNIT_PRICE]		,
+						[K_USUARIO]				,	[F_CHANGE_PRICE]	,
+						[UNIT_PRICE_HISTORY]
+					)
+					VALUES
+					(	@PP_K_PO_PRICE			,
+						@PP_K_ITEM				,	@PP_PRICE_ITEM		,
+						@PP_K_USUARIO_ACCION	,	GETDATE()			,
+						@PP_PRICE_ITEM_ORIGINAL
+					)
+
+					IF @@ROWCOUNT = 0
+					BEGIN
+						DECLARE @VP_ERROR VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+						RAISERROR (@VP_ERROR, 16, 1 ) --MENSAJE - Severity -State.
+					END
+
+							UPDATE	ITEM
+							SET		
+									-- ==========================	-- ===========================
+									[K_PO_PRICE]					= @PP_K_PO_PRICE				,
+									[PRICE_ITEM]					= @PP_PRICE_ITEM				,	
+									-- ==========================	-- ===========================
+									[F_CAMBIO]						= GETDATE(), 
+									[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
+							WHERE	K_ITEM=@PP_K_ITEM
+
+								IF @@ROWCOUNT = 0
+								BEGIN
+									DECLARE @VP_ERROR_5 VARCHAR(250)='The [PRICE] item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+									RAISERROR (@VP_ERROR_5, 16, 1 ) --MENSAJE - Severity -State.
+								END
+
+				END
+		END
+	
 	-- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY

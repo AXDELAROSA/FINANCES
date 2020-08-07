@@ -217,7 +217,8 @@ CREATE TABLE [dbo].[VENDOR] (
 	-- ============================
 	[BUSINESS_NAME]					[VARCHAR](250) NOT NULL, 
 	[RFC_VENDOR]					[VARCHAR](25) NOT NULL	DEFAULT '',
-	[EMAIL]							[VARCHAR](100) NOT NULL DEFAULT '',
+	[EMAIL_1]						[VARCHAR](100) NOT NULL DEFAULT '',
+	[EMAIL_2]						[VARCHAR](100) NOT NULL DEFAULT '',
 	[PHONE]							[VARCHAR](25) NOT NULL	DEFAULT '',
 	[N_CREDIT_DAYS]					[INT] NULL DEFAULT 30,
 	-- ============================

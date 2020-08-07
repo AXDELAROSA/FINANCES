@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200206
 -- ////////////////////////////////////////////////////////////// 
 
-USE [COMPRAS]
+-- USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -49,6 +49,7 @@ AS
 
 	SELECT		TOP (@VP_LI_N_REGISTROS)
 				VENDOR.*,
+				EMAIL_1,	EMAIL_2,
 				STATUS_VENDOR.D_STATUS_VENDOR, CATEGORY_VENDOR.D_CATEGORY_VENDOR, --STATE_GEO.D_STATE_GEO,
 				STATUS_VENDOR.S_STATUS_VENDOR, CATEGORY_VENDOR.S_CATEGORY_VENDOR --STATE_GEO.S_STATE_GEO
 				--,D_USUARIO AS D_USUARIO_CAMBIO
@@ -71,7 +72,9 @@ AS
 				OR	VENDOR.BUSINESS_NAME			LIKE '%'+@PP_BUSCAR+'%'
 				OR	VENDOR.D_VENDOR					LIKE '%'+@PP_BUSCAR+'%' 
 				OR	VENDOR.RFC_VENDOR				LIKE '%'+@PP_BUSCAR+'%'
-				OR	VENDOR.C_VENDOR					LIKE '%'+@PP_BUSCAR+'%' )
+				OR	VENDOR.C_VENDOR					LIKE '%'+@PP_BUSCAR+'%' 
+				OR	VENDOR.EMAIL_1					LIKE '%'+@PP_BUSCAR+'%' 
+				OR	VENDOR.EMAIL_2					LIKE '%'+@PP_BUSCAR+'%' )
 				-- =============================
 --	AND			( @PP_K_STATE =-1				OR	VENDOR.TAX_K_STATE=@PP_K_STATE )
 	AND			( @PP_K_STATUS_VENDOR	=-1		OR	VENDOR.K_STATUS_VENDOR=@PP_K_STATUS_VENDOR )
@@ -107,6 +110,7 @@ AS
 				,ISNULL([K_CONTACT_VENDOR]	,-1) AS [K_CONTACT_VENDOR]				
 				-- =========================
 				,VENDOR.*
+				,EMAIL_1	,EMAIL_2
 				,(CASE	WHEN [N_CREDIT_DAYS]=''		THEN '30'
 						WHEN [N_CREDIT_DAYS]=NULL	THEN '30'
 						ELSE [N_CREDIT_DAYS] END) AS N_CREDIT_DAYS
@@ -182,7 +186,8 @@ CREATE PROCEDURE [dbo].[PG_IN_VENDOR]
 	@PP_C_VENDOR					VARCHAR(255),
 	-- ===========================
 	@PP_RFC_VENDOR					VARCHAR(13),
-	@PP_EMAIL						VARCHAR(100),
+	@PP_EMAIL_1						VARCHAR(100),
+	@PP_EMAIL_2						VARCHAR(100),
 	@PP_PHONE						VARCHAR(100),
 	@PP_N_CREDIT_DAYS				INT,
 	-- ===========================
@@ -217,16 +222,21 @@ DECLARE @VP_K_CONTACT_VENDOR	INT = 0
 BEGIN TRANSACTION 
 BEGIN TRY
 -- /////////////////////////////////////////////////////////////////////
-
-		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
+		DECLARE @VP_BD_NAME				VARCHAR(300) = ''
+		IF	@PP_K_SISTEMA_EXE=1
+		SET @VP_BD_NAME='COMPRAS'
+		ELSE
+		SET @VP_BD_NAME='COMPRAS_Pruebas'
+		
+		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, @VP_BD_NAME,
 																'VENDOR', 'K_VENDOR',
 																@OU_K_TABLA_DISPONIBLE = @VP_K_VENDOR	OUTPUT
 		
-		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
+		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, @VP_BD_NAME,
 																'ADDRESS_VENDOR', 'K_ADDRESS_VENDOR',
 																@OU_K_TABLA_DISPONIBLE = @VP_K_ADDRESS_VENDOR	OUTPUT		
 
-		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, 'COMPRAS',
+		EXECUTE [BD_GENERAL].dbo.[PG_SK_CATALOGO_K_MAX_GET]		@PP_K_SISTEMA_EXE, @VP_BD_NAME,
 																'CONTACT_VENDOR', 'K_CONTACT_VENDOR',
 																@OU_K_TABLA_DISPONIBLE = @VP_K_CONTACT_VENDOR	OUTPUT
 		
@@ -253,8 +263,9 @@ BEGIN TRY
 			(	[K_VENDOR], [D_VENDOR], 
 				[C_VENDOR], [O_VENDOR],
 				-- ===========================
-				[BUSINESS_NAME], [RFC_VENDOR], 
-				[EMAIL], [PHONE], 
+				[BUSINESS_NAME],	[RFC_VENDOR], 
+				[EMAIL_1],			[EMAIL_2], 
+				[PHONE], 
 				[N_CREDIT_DAYS],
 				-- ===========================
 				[K_STATUS_VENDOR],[K_CATEGORY_VENDOR],
@@ -265,8 +276,9 @@ BEGIN TRY
 			(	@VP_K_VENDOR, @PP_D_VENDOR, 
 				@PP_C_VENDOR, 10,
 				-- ===========================
-				@PP_D_VENDOR, @PP_RFC_VENDOR, 
-				@PP_EMAIL, @PP_PHONE,
+				@PP_D_VENDOR,	@PP_RFC_VENDOR, 
+				@PP_EMAIL_1,	@PP_EMAIL_2,
+				@PP_PHONE,
 				@PP_N_CREDIT_DAYS,
 				-- ===========================
 				@PP_K_STATUS_VENDOR, @PP_K_CATEGORY_VENDOR,
@@ -406,7 +418,8 @@ CREATE PROCEDURE [dbo].[PG_UP_VENDOR]
 	@PP_C_VENDOR					VARCHAR(255),
 	-- ===========================
 	@PP_RFC_VENDOR					VARCHAR(13),
-	@PP_EMAIL						VARCHAR(100),
+	@PP_EMAIL_1						VARCHAR(100),
+	@PP_EMAIL_2						VARCHAR(100),
 	@PP_PHONE						VARCHAR(100),
 	@PP_N_CREDIT_DAYS				INT,
 	-- ===========================
@@ -458,7 +471,8 @@ BEGIN TRY
 				-- ========================== -- ===========================
 				[BUSINESS_NAME]					= @PP_D_VENDOR,				--@PP_BUSINESS_NAME,
 				[RFC_VENDOR]					= @PP_RFC_VENDOR,
-				[EMAIL]							= @PP_EMAIL,
+				[EMAIL_1]							= @PP_EMAIL_1,
+				[EMAIL_2]							= @PP_EMAIL_2,
 				[PHONE]							= @PP_PHONE,
 				[N_CREDIT_DAYS]					= @PP_N_CREDIT_DAYS,
 				-- ========================== -- ===========================

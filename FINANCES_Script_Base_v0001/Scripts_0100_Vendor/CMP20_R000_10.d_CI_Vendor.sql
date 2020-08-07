@@ -49,7 +49,7 @@ AS
 				[C_VENDOR], [O_VENDOR],
 				-- ===========================
 				[BUSINESS_NAME], [RFC_VENDOR], 
-				[EMAIL], [PHONE], 
+				[EMAIL_1], [PHONE], 
 				[N_CREDIT_DAYS],
 				-- ===========================
 				[K_STATUS_VENDOR],[K_CATEGORY_VENDOR],
