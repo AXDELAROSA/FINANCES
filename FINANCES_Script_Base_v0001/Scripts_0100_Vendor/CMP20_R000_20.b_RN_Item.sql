@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200217
 -- ////////////////////////////////////////////////////////////// 
 
-USE [COMPRAS]
+--USE [COMPRAS]
 GO
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
@@ -83,7 +83,23 @@ AS
 					SET @VP_RESULTADO =  'There are already [ITEMS] with that Item Pearl ['+@PP_PART_NUMBER_ITEM_PEARL+']'
 				END
 			END
-		END		
+		END
+		
+		--ESTA VALIDACIÓN QUEDA PENDIENTE A FALTA DE SABER QUE SE HARÁ CON LA INFORMACIÓN DEL ITEM. EN EL SISTEMA PRODUCTIVO.
+		--IF @VP_RESULTADO=''
+		--BEGIN
+		--	IF @PP_PART_NUMBER_ITEM_PEARL<>''
+		--	BEGIN
+		--		SELECT	@VP_N_ITEM_X_ITEM_PEARL =		COUNT(ITEM_NO)
+		--												FROM	DATA_02.DBO.IMITMIDX_SQL
+		--												WHERE	RTRIM(LTRIM(ITEM_NO))=@PP_PART_NUMBER_ITEM_PEARL
+
+		--		IF @VP_N_ITEM_X_ITEM_PEARL>0
+		--		BEGIN
+		--			SET @VP_RESULTADO =  'There are already [ITEMS] with that Item Pearl in Engineering System ['+@PP_PART_NUMBER_ITEM_PEARL+']'
+		--		END
+		--	END
+		--END
 	END
 	-- ///////////////////////////////////////////		
 	IF	@VP_RESULTADO<>''
@@ -104,24 +120,21 @@ CREATE PROCEDURE [dbo].[PG_RN_ITEM_ITS_DELETEABLE]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
 	-- ===========================		
-	@PP_K_ITEM						[INT],
+	@PP_K_ITEM							[INT],
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
 	DECLARE @VP_RESULTADO				VARCHAR(300) = ''		
 -- /////////////////////////////////////////////////////
-	DECLARE @VP_N_FACTURA_X_ITEM		INT = 0
-/*
-	-- ADR: FALTA AGREGAR EL CODIGO QUE VALIDE ESTE CASO.
-	SELECT	@VP_N_FACTURA_X_ITEM =		COUNT	(ITEM.K_ITEM)
-											FROM	ITEM,FACTURA
-											WHERE	PLANTA.K_ITEM=ITEM.K_ITEM	
-											AND		ITEM.K_ITEM=@PP_K_ITEM										
-*/
+	DECLARE @VP_PO_X_ITEM		INT = 0
+
+	SELECT	@VP_PO_X_ITEM =		COUNT	(DETAILS_PURCHASE_ORDER.K_ITEM)
+								FROM	DETAILS_PURCHASE_ORDER
+								WHERE	DETAILS_PURCHASE_ORDER.K_ITEM=@PP_K_ITEM
 	-- =============================
 	IF @VP_RESULTADO=''
-		IF @VP_N_FACTURA_X_ITEM>0
-			SET @VP_RESULTADO =  'There are [INVOICE] assigned.' 		
+		IF @VP_PO_X_ITEM>0
+			SET @VP_RESULTADO =  'The [ITEM] is added to one or more purchase orders.'
 	-- /////////////////////////////////////////////////////
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
 	-- /////////////////////////////////////////////////////

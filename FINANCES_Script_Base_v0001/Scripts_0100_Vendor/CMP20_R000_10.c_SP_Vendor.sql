@@ -169,15 +169,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_VENDOR]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_IN_VENDOR]
 GO
-
--- EXECUTE [dbo].[PG_IN_VENDOR] 0, 139,												
---				'TEST VENDOR 3' , '' , 
---				'TEST200230IT' , 'TEST200201IT@TEST.VENDOR' , '6660000000' , 30 , 
---				1,0,
---				'CALLE VENDOR' , 'COLONIA VENDOR' , 'COMMENTS' , 
---				'CIUDAD VENDOR', 'ESTADO VENDOR' , '32000' , '123' , '-A', 
---				'NOMBRE 1' , 'APELLIDO 1' , '' , '' , '' , 
---				'' , '' ,'' ,''															,'' 
+-- EXECUTE [dbo].[PG_IN_VENDOR] 0, 139,		 'ADOSA' , '' , '' , '' , '' , '6144101500' , 30 , 1 , 0 , '' , '' , '' , '' , '00000' , '' , '' , '' , '' , '' , ''
 CREATE PROCEDURE [dbo].[PG_IN_VENDOR]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -241,10 +233,10 @@ BEGIN TRY
 																@OU_K_TABLA_DISPONIBLE = @VP_K_CONTACT_VENDOR	OUTPUT
 		
 	-- /////////////////////////////////////////////////////////////////////
-	IF @VP_MENSAJE=''
-		EXECUTE [dbo].[PG_RN_VENDOR_INSERT]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@VP_K_VENDOR, 
-												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+	--IF @VP_MENSAJE=''
+	--	EXECUTE [dbo].[PG_RN_VENDOR_INSERT]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+	--											@VP_K_VENDOR, 
+	--											@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
 	-- /////////////////////////////////////////////////////////////////////
 	IF @VP_MENSAJE=''
 		EXECUTE [dbo].[PG_RN_VENDOR_UNIQUE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,

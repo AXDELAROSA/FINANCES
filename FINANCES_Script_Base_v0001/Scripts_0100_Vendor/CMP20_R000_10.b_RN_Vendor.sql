@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200206
 -- ////////////////////////////////////////////////////////////// 
 
-USE [COMPRAS]
+--USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -237,7 +237,6 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_
 	DROP PROCEDURE [dbo].[PG_RN_VENDOR_INSERT]
 GO
 
-
 CREATE PROCEDURE [dbo].[PG_RN_VENDOR_INSERT]
 	@PP_K_SISTEMA_EXE					[INT],
 	@PP_K_USUARIO_ACCION				[INT],
@@ -246,16 +245,16 @@ CREATE PROCEDURE [dbo].[PG_RN_VENDOR_INSERT]
 	-- ===========================		
 	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
 AS
-
-	DECLARE @VP_RESULTADO				VARCHAR(300) = ''
-		
+	DECLARE @VP_RESULTADO				VARCHAR(300) = ''		
 	-- ///////////////////////////////////////////
-
 	IF @VP_RESULTADO=''
-		EXECUTE [dbo].[PG_RN_VENDOR_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-												@PP_K_VENDOR,	 
-												@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
-
+		--EXECUTE [dbo].[PG_RN_VENDOR_UNIQUE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+		--										@PP_K_VENDOR,	@PP_D_VENDOR,	@PP_RFC_VENDOR, 
+		--										-- ===========================		
+												--@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
+		--EXECUTE [dbo].[PG_RN_VENDOR_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+		--										@PP_K_VENDOR,	 
+		--										@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 	-- ///////////////////////////////////////////
 	
 	IF	@VP_RESULTADO<>''
@@ -295,8 +294,8 @@ AS
 
 	IF @VP_RESULTADO=''
 		EXECUTE [dbo].[PG_RN_VENDOR_EXISTS]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
-													@PP_K_VENDOR,	 
-													@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
+												@PP_K_VENDOR,	 
+												@OU_RESULTADO_VALIDACION = @VP_RESULTADO		OUTPUT
 	-- //////////////////////////////////////
 	
 	IF	@VP_RESULTADO<>''

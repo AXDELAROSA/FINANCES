@@ -326,9 +326,10 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 GO
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,10
 -- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,7
 -- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,8008
--- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,
+-- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,7
 CREATE PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -338,6 +339,14 @@ AS
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
 	-- ///////////////////////////////////////////			
 	SELECT		TOP (1)
+				-- ===========================	-- ===========================
+				-- PARA BLANKET PO
+				L_IS_BLANKET					AS L_IS_BLANKET_PO,
+				ISNULL(K_CUSTOMER,0)			AS K_CUSTOMER,
+				ISNULL(D_PROGRAM,'')			AS D_PROGRAM			,
+				ISNULL(ANNUAL_VOLUME,0)			AS ANNUAL_VOLUME		,
+				ISNULL(GROSS_VEHICLE_AREA,0)	AS GROSS_VEHICLE_AREA	,
+				-- ===========================	-- ===========================
 				S_STATUS_PURCHASE_ORDER	, D_STATUS_PURCHASE_ORDER,
 				D_VENDOR,
 				S_PLACED_BY	, D_PLACED_BY,
@@ -382,6 +391,8 @@ AS
 				HOWE.DBO.VISTA_GAFETES,				-- PARA OBTENER EL NOMBRE DE LA PERSONA QUE AUTORIZARÁ LA PO
 				BD_GENERAL.DBO.FIRMAS
 				-- =============================
+	LEFT JOIN	DETAILS_BLANKET_PURCHASE_ORDER		ON DETAILS_BLANKET_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=K_HEADER_PURCHASE_ORDER
+	AND			DETAILS_BLANKET_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 				-- =============================
 	WHERE		HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER=STATUS_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER
 	AND			HEADER_PURCHASE_ORDER.K_VENDOR=VENDOR.K_VENDOR
@@ -394,6 +405,7 @@ AS
 	AND			EN_NUM_EMP=HEADER_PURCHASE_ORDER.K_APPROVED_BY
 	AND			HEADER_PURCHASE_ORDER.K_APPROVED_BY=FIRMAS.K_FIRMAS
 				-- =============================
+--	AND			DETAILS_BLANKET_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 				-- =============================
 	AND			HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 	AND			HEADER_PURCHASE_ORDER.L_BORRADO<>1		
@@ -657,8 +669,8 @@ AS
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
 	-- ///////////////////////////////////////////			
 	SELECT		TOP (1)
-				isnull(PO_COMENTARIO_LOG.K_HEADER_PURCHASE_ORDER,'') AS K_HEADER_PURCHASE_ORDER,
-				isnull(C_PO_COMENTARIO_LOG,'') AS COMENTARIO
+				ISNULL(PO_COMENTARIO_LOG.K_HEADER_PURCHASE_ORDER,'') AS K_HEADER_PURCHASE_ORDER,
+				ISNULL(C_PO_COMENTARIO_LOG,'') AS COMENTARIO
 				-- =============================	
 	FROM		HEADER_PURCHASE_ORDER,
 				PO_COMENTARIO_LOG
@@ -705,13 +717,21 @@ CREATE PROCEDURE [dbo].[PG_IN_HEADER_PURCHASE_ORDER]
 	@PP_DISCOUNT_PURCHASE_ORDER				[DECIMAL] (10,4),
 	@PP_TOTAL_PURCHASE_ORDER				[DECIMAL] (10,4),
 	-----=====================================================
+	--	PARA DETAILS_PURCHASE_ORDER
 	@PP_ITEM_ARRAY							NVARCHAR(MAX),
 	@PP_QUANTITY_ARRAY						NVARCHAR(MAX),
 	@PP_PRICE_ARRAY							NVARCHAR(MAX),
 	@PP_TOTAL_ARRAY							NVARCHAR(MAX),
 	@PP_K_PO_PRICE							NVARCHAR(MAX),
 	-----=====================================================
-	@PP_TOTAL_ITEMS							[INT]
+	@PP_TOTAL_ITEMS							[INT],
+	-----=====================================================
+	--	PARA BLANKET
+	@PP_L_IS_BLANKET						[INT],
+	@PP_K_CUSTOMER							[INT],
+	@PP_D_PROGRAM							[VARCHAR](500),
+	@PP_ANNUAL_VOLUME						[DECIMAL](10,4),
+	@PP_GROSS_VEHICLE_AREA					[DECIMAL](10,4)
 AS			
 DECLARE @VP_MENSAJE						VARCHAR(500) = ''
 DECLARE @VP_K_HEADER_PURCHASE_ORDER		INT = 0;
@@ -765,6 +785,7 @@ BEGIN TRY
 				[TOTAL_PURCHASE_ORDER],				
 				-- ============================
 				--[K_ACCOUNT_PURCHASE_ORDER],
+				[L_IS_BLANKET],
 				-- ===========================
 				[K_USUARIO_ALTA], [F_ALTA], [K_USUARIO_CAMBIO], [F_CAMBIO],
 				[L_BORRADO], [K_USUARIO_BAJA], [F_BAJA]  )
@@ -794,6 +815,7 @@ BEGIN TRY
 				@PP_TOTAL_PURCHASE_ORDER,				
 				-- ============================
 				--0, --@PP_K_ACCOUNT_PURCHASE_ORDER,
+				@PP_L_IS_BLANKET,
 				-- ============================
 				@PP_K_USUARIO_ACCION, GETDATE(), @PP_K_USUARIO_ACCION, GETDATE(),
 				0, NULL, NULL  )
@@ -811,10 +833,19 @@ BEGIN TRY
 		EXECUTE		[dbo].[PG_IN_DETAILS_PURCHASE_ORDER]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
 															-----=====================================================
 															@VP_K_HEADER_PURCHASE_ORDER,
-															--@VP_K_PO,		-- VALOR PARA PRUEBAS, SE ESTABLECE PARA NO INICIAR LAS PO EN 1
 															@PP_ITEM_ARRAY,		@PP_QUANTITY_ARRAY,
 															@PP_PRICE_ARRAY,	@PP_TOTAL_ARRAY,	@PP_K_PO_PRICE
 	END
+
+	IF @VP_MENSAJE=''
+	BEGIN
+		EXECUTE		[dbo].[PG_INUP_DETAILS_BLANKET_PURCHASE_ORDER]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+															-----=====================================================
+															@VP_K_HEADER_PURCHASE_ORDER,	@PP_L_IS_BLANKET,	
+															@PP_K_CUSTOMER,					@PP_D_PROGRAM,					
+															@PP_ANNUAL_VOLUME,				@PP_GROSS_VEHICLE_AREA
+	END
+
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY
@@ -942,6 +973,52 @@ GO
 
 
 -- //////////////////////////////////////////////////////////////
+-- // PARA INSERTAR LOS DETALLES DE LA BLANKET PO
+-- // STORED PROCEDURE ---> SELECT / FICHA
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_INUP_DETAILS_BLANKET_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_INUP_DETAILS_BLANKET_PURCHASE_ORDER]
+GO
+CREATE PROCEDURE [dbo].[PG_INUP_DETAILS_BLANKET_PURCHASE_ORDER]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO_ACCION		INT,
+	-----=====================================================
+	@PP_K_HEADER_PURCHASE_ORDER		INT,
+	-----=====================================================
+	@PP_L_IS_BLANKET				[INT],
+	@PP_K_CUSTOMER					[INT],
+	@PP_D_PROGRAM					[VARCHAR](500),
+	@PP_ANNUAL_VOLUME				[DECIMAL](10,4),
+	@PP_GROSS_VEHICLE_AREA			[DECIMAL](10,4)
+AS
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''
+
+	IF @PP_L_IS_BLANKET=1
+	BEGIN
+					INSERT INTO DETAILS_BLANKET_PURCHASE_ORDER
+						(
+						[K_HEADER_PURCHASE_ORDER],
+						[K_CUSTOMER],					[D_PROGRAM]			,
+						[ANNUAL_VOLUME],				[GROSS_VEHICLE_AREA]
+						)
+					VALUES
+						(
+						@PP_K_HEADER_PURCHASE_ORDER,
+						@PP_K_CUSTOMER,					@PP_D_PROGRAM		,
+						@PP_ANNUAL_VOLUME,				@PP_GROSS_VEHICLE_AREA
+						)																		
+													
+			IF @@ROWCOUNT = 0
+				BEGIN
+					--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
+					SET @VP_MENSAJE='The DETAIL_BLANKET_PO was not inserted. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+					RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
+				END	
+	END
+	-- ///////////////////////////////////////////////////////////////
+GO
+
+-- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> INSERT / FICHA
 -- // PARA INSERTAR LOS COMENTARIOS EN EL LOG DE COMENTARIOS DE LA PO
 -- //////////////////////////////////////////////////////////////
@@ -1045,7 +1122,14 @@ CREATE PROCEDURE [dbo].[PG_UP_HEADER_PURCHASE_ORDER]
 	@PP_TOTAL_ARRAY					NVARCHAR(MAX),
 	@PP_K_PO_PRICE_ARRAY			NVARCHAR(MAX),
 	-----=====================================================
-	@PP_TOTAL_ITEMS					[INT]
+	@PP_TOTAL_ITEMS					[INT],
+	-----=====================================================
+	--	PARA BLANKET
+	@PP_L_IS_BLANKET				[INT],
+	@PP_K_CUSTOMER					[INT],
+	@PP_D_PROGRAM					[VARCHAR](500),
+	@PP_ANNUAL_VOLUME				[DECIMAL](10,4),
+	@PP_GROSS_VEHICLE_AREA			[DECIMAL](10,4)
 AS			
 DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 BEGIN TRANSACTION 
@@ -1094,6 +1178,8 @@ BEGIN TRY
 				[ADDITIONAL_DISCOUNTS_PURCHASE_ORDER]=@PP_DISCOUNT_PURCHASE_ORDER,
 				[TOTAL_PURCHASE_ORDER]			= @PP_TOTAL_PURCHASE_ORDER,				
 				-- ============================	= -- ============================
+				[L_IS_BLANKET]					= @PP_L_IS_BLANKET,
+				-- ============================	= -- ============================
 				[F_CAMBIO]						= GETDATE(), 
 				[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
 		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
@@ -1109,6 +1195,10 @@ BEGIN TRY
 		DELETE 
 		FROM	DETAILS_PURCHASE_ORDER
 		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
+
+		DELETE 
+		FROM	DETAILS_BLANKET_PURCHASE_ORDER
+		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
 	END
 
 	IF @VP_MENSAJE=''
@@ -1118,6 +1208,12 @@ BEGIN TRY
 															@PP_K_HEADER_PURCHASE_ORDER,
 															@PP_ITEM_ARRAY,		@PP_QUANTITY_ARRAY,
 															@PP_PRICE_ARRAY,	@PP_TOTAL_ARRAY,	@PP_K_PO_PRICE_ARRAY
+
+		EXECUTE		[dbo].[PG_INUP_DETAILS_BLANKET_PURCHASE_ORDER]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+															-----=====================================================
+															@PP_K_HEADER_PURCHASE_ORDER,	@PP_L_IS_BLANKET,	
+															@PP_K_CUSTOMER,					@PP_D_PROGRAM,					
+															@PP_ANNUAL_VOLUME,				@PP_GROSS_VEHICLE_AREA
 	END
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
@@ -1304,18 +1400,18 @@ BEGIN TRY
 			SELECT @VP_VALOR_QTY_PE		= LEFT(@PP_QUANTITY_PENDI_ARRAY	, @VP_POSICION_QTY_PE	- 1)
 			SELECT @VP_VALOR_QTY_PN		= LEFT(@PP_QUANTITY_PENDO_ARRAY	, @VP_POSICION_QTY_PN	- 1)
 		
-			DECLARE @VP_TOTAL_PENDIENTE INT = 0
-			DECLARE @VP_TOTAL_RECIBIDA	INT = 0
+			DECLARE @VP_TOTAL_PENDIENTE DECIMAL = 0
+			DECLARE @VP_TOTAL_RECIBIDA	DECIMAL = 0
 
 					IF @PP_K_STATUS_PO=11
 					BEGIN
-						SET @VP_TOTAL_PENDIENTE =	CONVERT(INT,@VP_VALOR_QTY_PE)
-						SET @VP_TOTAL_RECIBIDA	=	CONVERT(INT,(@VP_VALOR_QTY_RE))
+						SET @VP_TOTAL_PENDIENTE =	CONVERT(DECIMAL,@VP_VALOR_QTY_PE)
+						SET @VP_TOTAL_RECIBIDA	=	CONVERT(DECIMAL,(@VP_VALOR_QTY_RE))
 					END
 					ELSE
 					BEGIN
-						SET	@VP_TOTAL_RECIBIDA	=	(CONVERT(INT,(@VP_VALOR_QTY_RE)) + CONVERT(INT,@VP_VALOR_QTY_PN))
-						SET @VP_TOTAL_PENDIENTE =	CONVERT(INT,@VP_VALOR_QTY_OR) - @VP_TOTAL_RECIBIDA
+						SET	@VP_TOTAL_RECIBIDA	=	(CONVERT(DECIMAL,(@VP_VALOR_QTY_RE)) + CONVERT(DECIMAL,@VP_VALOR_QTY_PN))
+						SET @VP_TOTAL_PENDIENTE =	CONVERT(DECIMAL,@VP_VALOR_QTY_OR) - @VP_TOTAL_RECIBIDA
 					END
 					
 					UPDATE	[DETAILS_PURCHASE_ORDER]			
@@ -1342,7 +1438,7 @@ BEGIN TRY
 	-- ///////////////////////////////////////////
 	IF @VP_MENSAJE=''
 	BEGIN
-		DECLARE @VP_SUMA_PENDIENTES INT=-1
+		DECLARE @VP_SUMA_PENDIENTES DECIMAL=-1
 
 		SELECT	@VP_SUMA_PENDIENTES=SUM(QUANTITY_PENDING)
 		FROM	DETAILS_PURCHASE_ORDER
@@ -1713,23 +1809,34 @@ BEGIN TRY
 						SET @VP_SUBJECT = 'PEARL LEATHER [PO#' + CONVERT(VARCHAR(10),FORMAT(@VP_PO_INT,'000000')) +']'--CONVERT(VARCHAR(10),FORMAT(@VP_VALOR_PO,'000000'))+']'					
 					END
 					SET @VP_BODY_HTML =  
-					N'<p style="color:blue; font-size:20px">	Buen día:<br>' +
-					N'<tab1 style="white-space:pre">	</tab1>	Se adjunta orden de compra para que sea procesada a la brevedad.<br> Saludos, Gracias!</p>' +
-					
-					N'<p style="color:black; font-size:20px"> == = == = == = == = == = == </p>'+
-					
-					N'<p style="color:blue; font-size:20px">	Good Day:<br>'+
-					N'<tab1 style="white-space:pre">	</tab1>	A purchase order is attached to be processed promptly.<br> Best regards, thanks!</p>'+
-					
-					N'<p style="color:black; font-size:20px">== = == = == = == = == = == </p>'+
-					
-					N'<p><span style="color:maroon; font-size:20px"><strong> Fabiola Gerardo Arévalo | Compras </strong></span><br>'+
-					N'<span style="color:green; font-size:15px"> Dirección: Av. Rosa Maria Y. Fuentes 7050-A |C.P.32320 <br>'+
-					N'Tel. 656-892-5800|Ext: 121|Cel. 656-103-4020 </span></p>'+
-					
-					N'<p><span style="color:navy; font-size:15px"><strong> RECEPCION DE MATERIAL </strong></span><br>'+
-					
-					N'<span style="color:black; font-size:15px"> Lunes a Viernes 7am -9am, 10am -2pm y 4pm -5:30pm </span></p>'				  								
+					N'<p style="font-size:12.0pt;font-family:"Calisto MT",serif;color:#262626">'+
+					N'Buen día, <br><br>'+
+					N'Se envía orden de compra, favor de realizar el seguimiento correspondiente para la entrega.<br>'+
+					N'Favor de confirmar de recibido y fecha de entrega estimada.<br><br>'+
+					N'Saludos.<br> == = == = == = == = == = == = == = == = == = == = == = == = == = == = ==<br>'+
+					N'Good day, <br><br>'+
+					N'Purchase order is sent, please track it for delivery.<br>'+
+					N'Please confirm receipt and estimated delivery date.<br><br>'+
+					N'Regards.<br> </p> <p>'+
+					N'<span style="font-size:12.0pt;font-family:"Cambria",serif;color:#943634"><b>Fabiola Gerardo Arévalo | Compras</b></span><br>'+
+					N'<span style="font-family:"Cambria",serif;color:#D99594"><b>Dirección:</b></span>'+
+					N'<span style="font-family:"Cambria",serif;color:#D99594">Av. Rosa Maria Y. Fuentes 7050-A <b>|C.P.</b> 32320</span></br>'+
+					N'<span style="font-family:"Cambria",serif;color:#D99594"><b>Tel.</b>656-892-5800<b>|Ext:</b>121'+
+					N'<b>|Cel.</b> 656-103-4020<o:p></o:p></span><br><br></p>'+
+					N'<p><span style="font-size:10.0pt;font-family:"Cambria",serif;color:#943634"><b><u>RECEPCION DE MATERIAL <b>|</b> RECEIPT OF MATERIAL</u></b></p>'+
+					N'<p><span style="font-size:8.0pt;font-family:"Cambria",serif;color:#943634"><b>Lunes a Viernes | Monday to Friday: 7am -9am, 10am -2pm y 4pm -5:30pm</b></span></p>'
+
+					--N'<p style="color:blue; font-size:20px">	Buen día:<br>' +
+					--N'<tab1 style="white-space:pre">	</tab1>	Se adjunta orden de compra para que sea procesada a la brevedad.<br> Saludos, Gracias!</p>' +					
+					--N'<p style="color:black; font-size:20px"> == = == = == = == = == = == </p>'+					
+					--N'<p style="color:blue; font-size:20px">	Good Day:<br>'+
+					--N'<tab1 style="white-space:pre">	</tab1>	A purchase order is attached to be processed promptly.<br> Best regards, thanks!</p>'+					
+					--N'<p style="color:black; font-size:20px">== = == = == = == = == = == </p>'+					
+					--N'<p><span style="color:maroon; font-size:20px"><strong> Fabiola Gerardo Arévalo | Compras </strong></span><br>'+
+					--N'<span style="color:green; font-size:15px"> Dirección: Av. Rosa Maria Y. Fuentes 7050-A |C.P.32320 <br>'+
+					--N'Tel. 656-892-5800|Ext: 121|Cel. 656-103-4020 </span></p>'+					
+					--N'<p><span style="color:navy; font-size:15px"><strong> RECEPCION DE MATERIAL </strong></span><br>'+					
+					--N'<span style="color:black; font-size:15px"> Lunes a Viernes 7am -9am, 10am -2pm y 4pm -5:30pm </span></p>'				  								
 					
 					EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
 					@copy_recipients = 'ALEJANDROD@PEARLLEATHER.COM.MX',

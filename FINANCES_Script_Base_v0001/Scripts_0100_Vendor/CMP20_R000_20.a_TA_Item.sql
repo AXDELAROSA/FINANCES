@@ -38,6 +38,73 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[STATUS
 	DROP TABLE [dbo].[STATUS_ITEM]
 GO
 
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CLASS_ITEM]') AND type in (N'U'))
+	DROP TABLE [dbo].[CLASS_ITEM]
+GO
+
+
+-- ////////////////////////////////////////////////////////////////
+-- //					CLASS_ITEM				 
+-- ////////////////////////////////////////////////////////////////
+CREATE TABLE [dbo].[CLASS_ITEM] (
+	[K_CLASS_ITEM]				[INT]			NOT NULL,
+	[D_CLASS_ITEM]				[VARCHAR](100)	NOT NULL,
+	[C_CLASS_ITEM]				[VARCHAR](255)	NOT NULL,
+	[S_CLASS_ITEM]				[VARCHAR](10)	NOT NULL,
+	[O_CLASS_ITEM]				[INT]			NOT NULL,
+	[L_CLASS_ITEM]				[INT]			NOT NULL
+) ON [PRIMARY]
+GO
+-- //////////////////////////////////////////////////////
+ALTER TABLE [dbo].[CLASS_ITEM]
+	ADD CONSTRAINT [PK_CLASS_ITEM]
+		PRIMARY KEY CLUSTERED ([K_CLASS_ITEM])
+GO
+
+CREATE UNIQUE NONCLUSTERED 
+	INDEX [UN_CLASS_ITEM_01_DESCRIPCION] 
+	   ON [dbo].[CLASS_ITEM] ( [D_CLASS_ITEM] )
+GO
+
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_CLASS_ITEM]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CI_CLASS_ITEM]
+GO
+
+-- //////////////////////////////////////////////////////////////
+-- //				CI - CLASS_ITEM
+-- //////////////////////////////////////////////////////////////
+
+CREATE PROCEDURE [dbo].[PG_CI_CLASS_ITEM]
+	@PP_K_SISTEMA_EXE					INT,
+	@PP_K_USUARIO_ACCION				INT,
+	-- ===========================
+	@PP_K_CLASS_ITEM				INT,
+	@PP_D_CLASS_ITEM				VARCHAR(100),
+	@PP_C_CLASS_ITEM				VARCHAR(255),
+	@PP_S_CLASS_ITEM				VARCHAR(10),
+	@PP_O_CLASS_ITEM				INT,
+	@PP_L_CLASS_ITEM				INT
+AS			
+	
+	-- ===========================
+
+	INSERT INTO CLASS_ITEM
+			(	[K_CLASS_ITEM], [D_CLASS_ITEM], 
+				[C_CLASS_ITEM], [S_CLASS_ITEM], 
+				[O_CLASS_ITEM], [L_CLASS_ITEM]		)
+	VALUES	
+			(	@PP_K_CLASS_ITEM, @PP_D_CLASS_ITEM, 
+				@PP_C_CLASS_ITEM, @PP_S_CLASS_ITEM,
+				@PP_O_CLASS_ITEM, @PP_L_CLASS_ITEM	 )
+GO
+
+
+EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,0, '(TO DEFINE)'	,					'' ,					'2DFNE', 00,1
+EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,1, 'ASSETS AND SUPPLIES',			'ASSETS AND SUPPLIES',	'SUPPL', 10,1
+EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,2, 'ROW MATERIAL',					'ROW MATERIAL',			'ROWMA', 20,1
+GO
+
 
 -- ////////////////////////////////////////////////////////////////
 -- //					STATUS_ITEM				 
@@ -331,29 +398,34 @@ AS
 		
 	-- //////////////////////////////////////////////////////////////
 GO
+ --		1, 'CAPACITY'		 2, 'LENGTH'			 3, 'SURFACE'			 4, 'VOLUME'			 5, 'WEIGHT'			
 
-
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  0, '(TO DEFINE)'	,''			, '2DFNE', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  1, 'CENTIMETER'	,'cm'		, 'CENTI', 10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  2, 'FOOT'			,'ft'		, 'FOOT',  10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'GALLON'		,'gal'		, 'GALON', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  4, 'GRAM'			,'g'		, 'GRAM' , 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  5, 'INCH'			,'in'		, 'INCH',  10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  6, 'KILOGRAM'		,'kg'		, 'KILOG', 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'LITER'			,'L'		, 'LITER', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'MILILITER'		,'ml'		, 'MILIL', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'METER'			,'m'		, 'METER', 10 , 1, 2
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10, 'OUNCE'		,'oz'		, 'OUNCE', 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  11, 'PIECE'		,'pc'		, 'PIECE', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  12, 'POUND'		,'lb'		, 'POUND', 10 , 1, 5
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  13,'SQUARE FOOT'	,'sqft'		, 'SQFT',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  14, 'SQUARE INCH'	,'sqin'		, 'INCH',  10 , 1, 3
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  15, 'SERVICE'		,'service'	, 'SERVI', 10 , 1, 0
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  16, 'BOX'			,'box'		, 'BOX'	 , 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  17, 'CAJA'			,'caja'		, 'CAJA' , 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  18, 'PACKAGE'		,'package'	, 'PACKG', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  19, 'PAQUETE'		,'paquete'	, 'PAQUT', 10 , 1, 1
-EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  20, 'YARDA LÍNEAL'	,'LY'		, 'LY'   , 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  0, '(TO DEFINE)'	,''				, '2DFNE', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  1, 'CENTIMETRO		- CENTIMETER'	,'cm'		, 'cm', 10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  2, 'PIE			- FOOT'			,'ft'		, 'ft',  10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  3, 'GALÓN			- GALLON'		,'gal'		, 'gal', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  4, 'GRAMO			- GRAM'			,'g'		, 'g' , 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  5, 'PULGADA		- INCH'			,'in'		, 'inch',  10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  6, 'KILOGRAMO		- KILOGRAM'		,'kg'		, 'Kg', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  7, 'LITRO			- LITER'		,'L'		, 'L', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  8, 'MILILITRO		- MILILITER'	,'ml'		, 'ml', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  9, 'METRO			- METER'		,'m'		, 'm', 10 , 1, 2
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  10, 'ONZA			- OUNCE'		,'oz'		, 'oz', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  11, 'PIEZA			- PIECE'		,'pc'		, 'PIECE', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  12, 'LIBRA			- POUND'		,'lb'		, 'lb', 10 , 1, 5
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  13,'PIE CUADRADO	- SQ FOOT'		,'sqft'		, 'sqft',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  14, 'PULGADA CUADRADA- SQ INCH'	,'sqin'		, 'sqinch',  10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  15, 'SERVICIO		- SERVICE'		,'service'	, 'SERVI', 10 , 1, 0
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  16, 'BOX'							,'box'		, 'box'	 , 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  17, 'CAJA'							,'caja'		, 'caja' , 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  18, 'PACKAGE'						,'package'	, 'Package', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  19, 'PAQUETE'						,'paquete'	, 'Paquet', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  20, 'YARDA LÍNEAL'					,'LY'		, 'LY'   , 10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  21, 'ROLLO			- ROLL'			,'ROLL'		, 'Roll' , 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  22, 'CUBETA'						,'CUBETA'	, 'Cubeta', 10 , 1, 1
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  24, 'YARDA			- YARD'			,'Y'		, 'yd'   , 10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  25, 'YARDA CUADRADA- SQ YARD'		,'Y'		, 'sqyd'   , 10 , 1, 3
+EXECUTE [dbo].[PG_CI_UNIT_OF_ITEM]  0, 139,  26, 'METRO CUADRADO - SQ METER'	,'m2'		, 'm2', 10 , 1, 2
 GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_UNIT_OF_ITEM]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_CI_UNIT_OF_ITEM]
@@ -390,14 +462,21 @@ GO
 
 -- //////////////////////////////////////////////////////
 -- ALTER TABLE [dbo].[ITEM]															
---	ADD [K_PO_PRICE]					[INT] NOT NULL	DEFAULT 1
+--	ADD [K_PO_PRICE]			[INT] NOT NULL	DEFAULT 1					--	AX:	20200805
 --	GO
+
+-- ALTER TABLE [dbo].[ITEM]															
+--	ALTER COLUMN [D_ITEM]		[NVARCHAR](MAX)								--	AX:	20200812
+--	GO
+
+-- ALTER TABLE [dbo].[ITEM]															
+--	ADD [K_CLASS_ITEM]			[INT] NOT NULL	DEFAULT 1					--	AX:	20200813
+--	GO														
 
 ALTER TABLE [dbo].[ITEM]
 	ADD CONSTRAINT [PK_ITEM]
 		PRIMARY KEY CLUSTERED ([K_ITEM])
 GO
-
 
 ALTER TABLE [dbo].[ITEM] ADD 
 	CONSTRAINT [FK_STATUS_ITEM_01] 

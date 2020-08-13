@@ -14,6 +14,10 @@ GO
 -- //////////////////////////////////////////////////////////////
 -- // DROPs
 -- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DETAILS_BLANKET_PURCHASE_ORDER]') AND type in (N'U'))
+	DROP TABLE [dbo].[DETAILS_BLANKET_PURCHASE_ORDER]
+GO
+
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DETAILS_PURCHASE_ORDER]') AND type in (N'U'))
 	DROP TABLE [dbo].[DETAILS_PURCHASE_ORDER]
 GO
@@ -410,6 +414,9 @@ ALTER TABLE [dbo].[HEADER_PURCHASE_ORDER]
 			[F_BAJA]					[DATETIME] NULL;
 GO
 
+-- ALTER TABLE [dbo].[HEADER_PURCHASE_ORDER]						
+-- 	ADD		[L_IS_BLANKET]				[INT] NOT NULL DEFAULT 0		-- AX - 20200810
+-- GO																
 
 -- ////////////////////////////////////////////////////////////////
 -- //					DETAILS_PURCHASE_ORDER				 
@@ -420,11 +427,7 @@ CREATE TABLE [dbo].[DETAILS_PURCHASE_ORDER] (
 	[K_DETAILS_PURCHASE_ORDER]				[INT] NOT NULL,
 	-- ============================
 	[K_ITEM]								[INT] NOT NULL,
---	[K_UNIT_OF_ITEM]						[INT] NOT NULL,
---	[PART_NUMBER_ITEM_VENDOR]				[VARCHAR](250)	NOT NULL DEFAULT '0',
---	[PART_NUMBER_ITEM_PEARL]				[VARCHAR](250)	NOT NULL DEFAULT '0',
 	-- ============================
---	[QUANTITY_ORDER]						[INT] NOT NULL DEFAULT 1,
 	[QUANTITY_ORDER]						[DECIMAL] (10,4) NOT NULL DEFAULT 1,
 	-- ============================
 	[K_PO_PRICE_LOG]						[INT] NOT NULL,
@@ -434,32 +437,19 @@ CREATE TABLE [dbo].[DETAILS_PURCHASE_ORDER] (
 	-- ============================
 	[QUANTITY_RECEIVED]						[DECIMAL] (10,4) NOT NULL,
 	[QUANTITY_PENDING]						[DECIMAL] (10,4) NOT NULL,
---	[QUANTITY_REJECTED]						[DECIMAL] (10,4) NOT NULL DEFAULT 0
 ) ON [PRIMARY]
 GO
 
+--	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]				-- AX - 20200806
+--	ALTER COLUMN	[QUANTITY_ORDER]	[DECIMAL] (10,4)	-- AX - 20200806
+--	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]				-- AX - 20200806
+--	ALTER COLUMN	[QUANTITY_RECEIVED] [DECIMAL] (10,4)	-- AX - 20200806
+--	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]				-- AX - 20200806
+--	ALTER COLUMN	[QUANTITY_PENDING] [DECIMAL] (10,4)		-- AX - 20200806
+															
 --	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ALTER COLUMN	[QUANTITY_ORDER]	[DECIMAL] (10,4)
---	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ALTER COLUMN	[QUANTITY_RECEIVED] [DECIMAL] (10,4)
---	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ALTER COLUMN	[QUANTITY_PENDING] [DECIMAL] (10,4)		
-
-
-
---	ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ADD	[K_PO_PRICE_LOG]	[INT]	NOT NULL DEFAULT 1	
+--	ADD	[K_PO_PRICE_LOG]	[INT]	NOT NULL DEFAULT 1		-- AX - 20200806
 -- //////////////////////////////////////////////////////
-
---ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER]
---	ADD CONSTRAINT [PK_DETAILS_PURCHASE_ORDER]
---		PRIMARY KEY CLUSTERED ([K_DETAILS_PURCHASE_ORDER])	
-GO
-
-----CREATE UNIQUE NONCLUSTERED 
-----	INDEX [UN_PURCHASE_ORDER_01_RFC] 
-----	   ON [dbo].[PURCHASE_ORDER] ( [RFC_PURCHASE_ORDER] )
-----GO
 
 ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER] ADD 
 	CONSTRAINT [FK_HEADER_PURCHASE_ORDER_01] 
@@ -470,119 +460,33 @@ ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER] ADD
 	--	REFERENCES [dbo].[ITEM] (K_ITEM)
 GO
 
+
+-- ////////////////////////////////////////////////////////////////
+-- //					DETAILS_BLANKET_PURCHASE_ORDER				 
+-- ////////////////////////////////////////////////////////////////
+
+CREATE TABLE [dbo].[DETAILS_BLANKET_PURCHASE_ORDER] (
+	[K_HEADER_PURCHASE_ORDER]				[INT] NOT NULL,
+	-- ============================		-- ============================		-- ============================	
+	-- CAMPOS ADICIONALES PARA BLANKET_PO
+	[K_CUSTOMER]							[INT] NOT NULL,
+	[D_PROGRAM]								[VARCHAR](500)	NOT NULL DEFAULT '',
+	[ANNUAL_VOLUME]							[DECIMAL](10,4) NOT NULL DEFAULT 0,
+	[GROSS_VEHICLE_AREA]					[DECIMAL](10,4) NOT NULL DEFAULT 0
+	-- ============================
+--	[K_UNIT_OF_ITEM_PRODUCTIVE]				[INT] NOT NULL
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[DETAILS_BLANKET_PURCHASE_ORDER] ADD 
+	CONSTRAINT [FK_HEADER_PURCHASE_ORDER_10] 
+		FOREIGN KEY ( K_HEADER_PURCHASE_ORDER ) 
+		REFERENCES [dbo].[HEADER_PURCHASE_ORDER] (K_HEADER_PURCHASE_ORDER )
+GO
+
 -- //////////////////////////////////////////////////////
 
---ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER] 
---	ADD		[K_USUARIO_ALTA]			[INT] NOT NULL,
---			[F_ALTA]					[DATETIME] NOT NULL,
---			[K_USUARIO_CAMBIO]			[INT] NOT NULL,
---			[F_CAMBIO]					[DATETIME] NOT NULL,
---			[L_BORRADO]					[INT] NOT NULL,
---			[K_USUARIO_BAJA]			[INT] NULL,
---			[F_BAJA]					[DATETIME] NULL;
---GO
-
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 
--- //////////////////////////////////////////////////////////////
--- //				CI - DETAILS_PURCHASE_ORDER
--- //////////////////////////////////////////////////////////////
-/*
-CREATE PROCEDURE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER]
-	@PP_K_SISTEMA_EXE					INT,
-	@PP_K_USUARIO_ACCION				INT,
-	-- ===========================
-	@PP_K_HEADER_PURCHASE_ORDER				[INT],
-	@PP_K_DETAILS_PURCHASE_ORDER			[INT],
-	-- ============================
-	@PP_K_ITEM								[INT],
-	-- ============================
-	@PP_QUANTITY_ORDER						[DECIMAL](10,4) ,
-	-- ============================
-	@PP_K_PO_PRICE_LOG						[INT] ,
-	@PP_UNIT_PRICE							[DECIMAL](10,4),
-	-- ============================
-	@PP_TOTAL_PRICE							[DECIMAL](10,4),
-	-- ============================
-	@PP_QUANTITY_RECEIVED					[INT] ,
-	@PP_QUANTITY_PENDING					[INT] 
-AS				
-	-- ===========================
-	INSERT INTO DETAILS_PURCHASE_ORDER
-			(		[K_HEADER_PURCHASE_ORDER]				,
-					[K_DETAILS_PURCHASE_ORDER]				,
-					-- ============================			,
-					[K_ITEM]								,
-					-- ============================			,
-					[QUANTITY_ORDER]						,
-					-- ============================			,
-					[K_PO_PRICE_LOG]						,
-					[UNIT_PRICE]							,
-					-- ============================			,
-					[TOTAL_PRICE]							,
-					-- ============================			,
-					[QUANTITY_RECEIVED]						,
-					[QUANTITY_PENDING]						)
-					
-	VALUES	
-			(		@PP_K_HEADER_PURCHASE_ORDER				,
-					@PP_K_DETAILS_PURCHASE_ORDER			,
-					-- ============================			,
-					@PP_K_ITEM								,
-					-- ============================			,
-					@PP_QUANTITY_ORDER						,
-					-- ============================			,
-					@PP_K_PO_PRICE_LOG						,
-					@PP_UNIT_PRICE							,
-					-- ============================			,
-					@PP_TOTAL_PRICE							,
-					-- ============================			,
-					@PP_QUANTITY_RECEIVED					,
-					@PP_QUANTITY_PENDING					)
-					
-GO
-
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 1,1,20,10,1,125,1250,9,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 1,2,31,2,1,65,130,2,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 1,3,18,6,1,55,330,6,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 3,1,20,2,1,125,250,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 3,2,19,2,1,320,640,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 3,3,18,2,1,55,110,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 3,4,25,3,1,78,234,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 3,5,13,3,1,350,1050,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 3,6,27,4,1,27,108,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 5,1,18,9,1,55,495,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 5,2,31,8,1,65,520,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 5,3,19,7,1,320,2240,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 7,1,24,1,1,31,31,0,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 7,2,25,1,1,48,48,0,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 7,3,27,1,1,15,15,0,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 6,1,25,1,1,48,48,0,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 6,2,27,1,1,15,15,0,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 4,5,18,5,1,55,275,5,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 1,4,17,3,1,1560,4680,3,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 1,5,25,4,1,78,312,4,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 1,6,13,2,1,350,700,2,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,1,19,1,1,320,320,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,2,31,1,1,65,65,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,3,27,8,1,27,216,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,4,25,2,1,78,156,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,5,13,4,1,350,1400,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,6,24,3,1,45,135,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,7,17,3,1,1560,4680,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,8,18,4,1,55,220,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,9,15,2,1,150,300,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 2,10,23,1,1,2563.9,2563.9,0,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 4,1,20,1,1,125,125,1,0
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 4,2,19,2,1,320,640,1,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 4,3,31,3,1,65,195,1,2
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 4,4,17,4,1,1560,6240,3,1
-EXECUTE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER] 0,139, 4,5,18,5,1,55,275,5,0
-
-GO
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CI_DETAILS_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_CI_DETAILS_PURCHASE_ORDER]
-GO
-*/
