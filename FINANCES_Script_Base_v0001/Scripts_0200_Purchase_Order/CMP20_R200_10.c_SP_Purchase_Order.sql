@@ -82,6 +82,7 @@ AS
 				S_TERMS		, D_TERMS	 ,				
 				S_CURRENCY	, D_CURRENCY,
 				D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
+				-- =============================	
 				HEADER_PURCHASE_ORDER.*
 				-- =============================	
 	FROM		HEADER_PURCHASE_ORDER
@@ -326,7 +327,8 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 GO
--- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,10
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,38
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,32
 -- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,7
 -- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,8008
 -- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,7
@@ -350,8 +352,16 @@ AS
 				S_STATUS_PURCHASE_ORDER	, D_STATUS_PURCHASE_ORDER,
 				D_VENDOR,
 				S_PLACED_BY	, D_PLACED_BY,
-				S_TERMS		, D_TERMS	 , C_TERMS	 ,
 				S_CURRENCY	, D_CURRENCY,	
+				S_TERMS		, D_TERMS	 , C_TERMS	 ,
+				-- ===========================	-- ===========================				
+				--(CASE	
+				--	WHEN	HEADER_PURCHASE_ORDER.K_TERMS=2 
+				--	AND		(VENDOR.N_CREDIT_DAYS>0 
+				--			--OR VENDOR.N_CREDIT_DAYS<>'') THEN	CONVERT(VARCHAR(5),VENDOR.[N_CREDIT_DAYS]) +' Día(s)/Day(s)'	-- ASI IBA A SER PARA NORMAL PERO NO FUNCIONA
+				--			OR VENDOR.N_CREDIT_DAYS<>'') THEN	'NET ' + CONVERT(VARCHAR(5),VENDOR.[N_CREDIT_DAYS]) +' Days'	-- ASI LO QUIERE OMAR
+				--	ELSE	''
+				--END	) AS CREDIT_DAYS,
 				-- ===========================	-- ===========================				
 				(CASE	
 					WHEN K_DELIVERY_TO IN (3) THEN	D_DELIVERY_TO
@@ -363,9 +373,11 @@ AS
 				S_DELIVERY_PURCHASE_ORDER	AS S_DELIVERY_TO,
 				CONVERT(INTEGER,TAX_RATE*100) AS TAX_RATE_PER,
 				-- ===========================	-- ===========================
-				CONVERT(VARCHAR, CAST(SUBTOTAL_PURCHASE_ORDER AS MONEY), 1)	AS SUBTOTAL_PURCHASE_ORDER,
-				CONVERT(VARCHAR, CAST(IVA_PURCHASE_ORDER AS MONEY), 1)		AS IVA_PURCHASE_ORDER,
-				CONVERT(VARCHAR, CAST(TOTAL_PURCHASE_ORDER AS MONEY), 1)	AS TOTAL_PURCHASE_ORDER,
+				CONVERT(VARCHAR, CAST(SUBTOTAL_PURCHASE_ORDER AS MONEY), 2)	AS SUBTOTAL_PURCHASE_ORDER,
+				--CAST(ADDITIONAL_TAXES_PURCHASE_ORDER AS MONEY)			AS OTHER_CHARGES_PURCHASE_ORDER,
+				--CAST(ADDITIONAL_DISCOUNTS_PURCHASE_ORDER AS MONEY)		AS DISCOUNTS_PURCHASE_ORDER,
+				CONVERT(VARCHAR, CAST(IVA_PURCHASE_ORDER AS MONEY), 2)		AS IVA_PURCHASE_ORDER,
+				CONVERT(VARCHAR, CAST(TOTAL_PURCHASE_ORDER AS MONEY), 2)	AS TOTAL_PURCHASE_ORDER,
 				-- ===========================	-- ===========================
 				-- ===========================	-- ===========================
 				-- ===========================	-- ===========================
@@ -419,7 +431,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_DETAILS_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER]
 GO
--- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,3
+-- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,33
 CREATE PROCEDURE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -447,7 +459,7 @@ AS
 					0											AS QUANTITY_PENDING,
 					DETAILS_PURCHASE_ORDER.QUANTITY_PENDING		AS QUANTITY_PENDING_ORIGINAL,
 					-- ======================================================
-					PRICE_ITEM,
+					DETAILS_PURCHASE_ORDER.UNIT_PRICE AS PRICE_ITEM, --PRICE_ITEM,
 					TOTAL_PRICE as TOTAL_ITEM,
 					DETAILS_PURCHASE_ORDER.*
 		FROM		DETAILS_PURCHASE_ORDER
@@ -470,7 +482,7 @@ AS
 					(DETAILS_PURCHASE_ORDER.QUANTITY_ORDER - DETAILS_PURCHASE_ORDER.QUANTITY_RECEIVED)		AS QUANTITY_PENDING,
 					DETAILS_PURCHASE_ORDER.QUANTITY_RECEIVED	AS QUANTITY_PENDING_ORIGINAL,
 					-- ======================================================
-					PRICE_ITEM,
+					DETAILS_PURCHASE_ORDER.UNIT_PRICE AS PRICE_ITEM, --PRICE_ITEM,
 					TOTAL_PRICE as TOTAL_ITEM,
 					DETAILS_PURCHASE_ORDER.*
 		FROM		DETAILS_PURCHASE_ORDER
@@ -489,7 +501,7 @@ AS
 					PART_NUMBER_ITEM_VENDOR,
 					D_ITEM,
 					DETAILS_PURCHASE_ORDER.QUANTITY_ORDER AS QUANTITY,
-					PRICE_ITEM,
+					DETAILS_PURCHASE_ORDER.UNIT_PRICE AS PRICE_ITEM, --PRICE_ITEM,
 					TOTAL_PRICE as TOTAL_ITEM,
 					DETAILS_PURCHASE_ORDER.*
 		FROM		DETAILS_PURCHASE_ORDER
@@ -731,7 +743,12 @@ CREATE PROCEDURE [dbo].[PG_IN_HEADER_PURCHASE_ORDER]
 	@PP_K_CUSTOMER							[INT],
 	@PP_D_PROGRAM							[VARCHAR](500),
 	@PP_ANNUAL_VOLUME						[DECIMAL](10,4),
-	@PP_GROSS_VEHICLE_AREA					[DECIMAL](10,4)
+	@PP_GROSS_VEHICLE_AREA					[DECIMAL](10,4),
+	-----=====================================================
+	@PP_C_INFO_QUOTATION					[VARCHAR] (500),
+	@PP_TERMS_HEADER						[VARCHAR] (500),
+	-----=====================================================
+	@PP_ADDITIONAL_TAXES_PURCHASE_ORDER		[DECIMAL](10,4)
 AS			
 DECLARE @VP_MENSAJE						VARCHAR(500) = ''
 DECLARE @VP_K_HEADER_PURCHASE_ORDER		INT = 0;
@@ -758,6 +775,10 @@ BEGIN TRY
 		BEGIN
 			SET @VP_K_STATUS=4
 		END
+		IF @PP_K_TERMS<>2
+		BEGIN
+			SET @PP_TERMS_HEADER=''
+		END
 	--============================================================================
 	--======================================INSERTAR EL HEADER_PURCHASE_ORDER
 	--============================================================================
@@ -781,11 +802,12 @@ BEGIN TRY
 				-- ============================
 				[TOTAL_ITEMS],
 				[SUBTOTAL_PURCHASE_ORDER],	[ADDITIONAL_DISCOUNTS_PURCHASE_ORDER],
-				[IVA_PURCHASE_ORDER],
+				[IVA_PURCHASE_ORDER],		[ADDITIONAL_TAXES_PURCHASE_ORDER],
 				[TOTAL_PURCHASE_ORDER],				
 				-- ============================
 				--[K_ACCOUNT_PURCHASE_ORDER],
-				[L_IS_BLANKET],
+				[L_IS_BLANKET],				[C_INFO_QUOTATION],
+				[TERMS_HEADER],
 				-- ===========================
 				[K_USUARIO_ALTA], [F_ALTA], [K_USUARIO_CAMBIO], [F_CAMBIO],
 				[L_BORRADO], [K_USUARIO_BAJA], [F_BAJA]  )
@@ -811,11 +833,12 @@ BEGIN TRY
 				-- ============================
 				@PP_TOTAL_ITEMS,
 				@PP_SUBTOTAL_PURCHASE_ORDER,	@PP_DISCOUNT_PURCHASE_ORDER,	
-				@PP_IVA_PURCHASE_ORDER,
+				@PP_IVA_PURCHASE_ORDER,			@PP_ADDITIONAL_TAXES_PURCHASE_ORDER,
 				@PP_TOTAL_PURCHASE_ORDER,				
 				-- ============================
 				--0, --@PP_K_ACCOUNT_PURCHASE_ORDER,
-				@PP_L_IS_BLANKET,
+				@PP_L_IS_BLANKET,				@PP_C_INFO_QUOTATION,
+				@PP_TERMS_HEADER,
 				-- ============================
 				@PP_K_USUARIO_ACCION, GETDATE(), @PP_K_USUARIO_ACCION, GETDATE(),
 				0, NULL, NULL  )
@@ -1091,45 +1114,50 @@ CREATE PROCEDURE [dbo].[PG_UP_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
-	@PP_K_HEADER_PURCHASE_ORDER		[INT],
-	@PP_C_PURCHASE_ORDER			[VARCHAR](255),
+	@PP_K_HEADER_PURCHASE_ORDER				[INT],
+	@PP_C_PURCHASE_ORDER					[VARCHAR](255),
 	-- ============================
-	@PP_F_DATE_PURCHASE_ORDER		[DATE],
-	@PP_F_REQUIRED_PURCHASE_ORDER	[DATE],
+	@PP_F_DATE_PURCHASE_ORDER				[DATE],
+	@PP_F_REQUIRED_PURCHASE_ORDER			[DATE],
 	-- ============================
-	@PP_ISSUED_BY_PURCHASE_ORDER	[VARCHAR] (150),
-	@PP_REQUIRED_PURCHASE_ORDER		[VARCHAR] (150),
-	@PP_K_PLACED_BY					[INT],
-	@PP_K_APPROVED_BY				[INT],
+	@PP_ISSUED_BY_PURCHASE_ORDER			[VARCHAR] (150),
+	@PP_REQUIRED_PURCHASE_ORDER				[VARCHAR] (150),
+	@PP_K_PLACED_BY							[INT],
+	@PP_K_APPROVED_BY						[INT],
 	-- ============================
-	@PP_K_DELIVERY_TO				[INT],
-	@PP_D_DELIVERY_TO				[VARCHAR] (250),
-	@PP_CONFIRMING_ORDER_WITH		[VARCHAR] (150),
-	@PP_K_VENDOR					[INT],
+	@PP_K_DELIVERY_TO						[INT],
+	@PP_D_DELIVERY_TO						[VARCHAR] (250),
+	@PP_CONFIRMING_ORDER_WITH				[VARCHAR] (150),
+	@PP_K_VENDOR							[INT],
 	-- ============================
-	@PP_K_TERMS						[INT],
-	@PP_K_CURRENCY					[INT],
-	@PP_TAX_RATE					[DECIMAL] (10,4),
+	@PP_K_TERMS								[INT],
+	@PP_K_CURRENCY							[INT],
+	@PP_TAX_RATE							[DECIMAL] (10,4),
 	-- ============================
-	@PP_SUBTOTAL_PURCHASE_ORDER		[DECIMAL] (10,4),
-	@PP_IVA_PURCHASE_ORDER			[DECIMAL] (10,4),
-	@PP_DISCOUNT_PURCHASE_ORDER		[DECIMAL] (10,4),
-	@PP_TOTAL_PURCHASE_ORDER		[DECIMAL] (10,4),
+	@PP_SUBTOTAL_PURCHASE_ORDER				[DECIMAL] (10,4),
+	@PP_IVA_PURCHASE_ORDER					[DECIMAL] (10,4),
+	@PP_DISCOUNT_PURCHASE_ORDER				[DECIMAL] (10,4),
+	@PP_TOTAL_PURCHASE_ORDER				[DECIMAL] (10,4),
 	-----=====================================================
-	@PP_ITEM_ARRAY					NVARCHAR(MAX),
-	@PP_QUANTITY_ARRAY				NVARCHAR(MAX),
-	@PP_PRICE_ARRAY					NVARCHAR(MAX),
-	@PP_TOTAL_ARRAY					NVARCHAR(MAX),
-	@PP_K_PO_PRICE_ARRAY			NVARCHAR(MAX),
+	@PP_ITEM_ARRAY							NVARCHAR(MAX),
+	@PP_QUANTITY_ARRAY						NVARCHAR(MAX),
+	@PP_PRICE_ARRAY							NVARCHAR(MAX),
+	@PP_TOTAL_ARRAY							NVARCHAR(MAX),
+	@PP_K_PO_PRICE_ARRAY					NVARCHAR(MAX),
 	-----=====================================================
-	@PP_TOTAL_ITEMS					[INT],
+	@PP_TOTAL_ITEMS							[INT],
 	-----=====================================================
 	--	PARA BLANKET
-	@PP_L_IS_BLANKET				[INT],
-	@PP_K_CUSTOMER					[INT],
-	@PP_D_PROGRAM					[VARCHAR](500),
-	@PP_ANNUAL_VOLUME				[DECIMAL](10,4),
-	@PP_GROSS_VEHICLE_AREA			[DECIMAL](10,4)
+	@PP_L_IS_BLANKET						[INT],
+	@PP_K_CUSTOMER							[INT],
+	@PP_D_PROGRAM							[VARCHAR](500),
+	@PP_ANNUAL_VOLUME						[DECIMAL](10,4),
+	@PP_GROSS_VEHICLE_AREA					[DECIMAL](10,4),
+	-----=====================================================
+	@PP_C_INFO_QUOTATION					[VARCHAR](500),
+	@PP_TERMS_HEADER						[VARCHAR](500),
+	-----=====================================================
+	@PP_ADDITIONAL_TAXES_PURCHASE_ORDER		[DECIMAL](10,4)
 AS			
 DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 BEGIN TRANSACTION 
@@ -1150,38 +1178,46 @@ BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////	
 	IF @VP_MENSAJE=''
 	BEGIN
+		IF @PP_K_TERMS<>2
+		BEGIN
+			SET @PP_TERMS_HEADER=''
+		END
+
 		UPDATE	HEADER_PURCHASE_ORDER
 		SET		
-				--[K_HEADER_PURCHASE_ORDER]		= @PP_K_HEADER_PURCHASE_ORDER,				
-				[C_PURCHASE_ORDER]				= @PP_C_PURCHASE_ORDER,					
-				-- ============================	= -- ============================
-				[F_DATE_PURCHASE_ORDER]			= @PP_F_DATE_PURCHASE_ORDER,				
-				[F_REQUIRED_PURCHASE_ORDER]		= @PP_F_REQUIRED_PURCHASE_ORDER,		
-				-- ============================	= -- ============================		
-				[ISSUED_BY_PURCHASE_ORDER]		= @PP_ISSUED_BY_PURCHASE_ORDER,			
-				[REQUIRED_PURCHASE_ORDER]		= @PP_REQUIRED_PURCHASE_ORDER,				
-				[K_PLACED_BY]					= @PP_K_PLACED_BY,
-				[K_APPROVED_BY]					= @PP_K_APPROVED_BY,
-				-- ============================	= -- ============================		
-				[K_DELIVERY_TO]					= @PP_K_DELIVERY_TO,
-				[D_DELIVERY_TO]					= @PP_D_DELIVERY_TO,
-				[CONFIRMING_ORDER_WITH]			= @PP_CONFIRMING_ORDER_WITH,				
-				[K_VENDOR]						= @PP_K_VENDOR,							
-				-- ============================	= -- ============================		
-				[K_TERMS]						= @PP_K_TERMS,								
-				[K_CURRENCY]					= @PP_K_CURRENCY,							
-				[TAX_RATE]						= (@PP_TAX_RATE/100),							
-				-- ============================	= -- ============================		
-				[TOTAL_ITEMS]					= @PP_TOTAL_ITEMS,							
-				[SUBTOTAL_PURCHASE_ORDER]		= @PP_SUBTOTAL_PURCHASE_ORDER,				
-				[IVA_PURCHASE_ORDER]			= @PP_IVA_PURCHASE_ORDER,					
+				--[K_HEADER_PURCHASE_ORDER]			= @PP_K_HEADER_PURCHASE_ORDER,				
+				[C_PURCHASE_ORDER]					= @PP_C_PURCHASE_ORDER,					
+				-- ============================		= -- ============================
+				[F_DATE_PURCHASE_ORDER]				= @PP_F_DATE_PURCHASE_ORDER,				
+				[F_REQUIRED_PURCHASE_ORDER]			= @PP_F_REQUIRED_PURCHASE_ORDER,		
+				-- ============================		= -- ============================		
+				[ISSUED_BY_PURCHASE_ORDER]			= @PP_ISSUED_BY_PURCHASE_ORDER,			
+				[REQUIRED_PURCHASE_ORDER]			= @PP_REQUIRED_PURCHASE_ORDER,				
+				[K_PLACED_BY]						= @PP_K_PLACED_BY,
+				[K_APPROVED_BY]						= @PP_K_APPROVED_BY,
+				-- ============================		= -- ============================		
+				[K_DELIVERY_TO]						= @PP_K_DELIVERY_TO,
+				[D_DELIVERY_TO]						= @PP_D_DELIVERY_TO,
+				[CONFIRMING_ORDER_WITH]				= @PP_CONFIRMING_ORDER_WITH,				
+				[K_VENDOR]							= @PP_K_VENDOR,							
+				-- ============================		= -- ============================		
+				[K_TERMS]							= @PP_K_TERMS,								
+				[K_CURRENCY]						= @PP_K_CURRENCY,							
+				[TAX_RATE]							= (@PP_TAX_RATE/100),							
+				-- ============================		= -- ============================		
+				[TOTAL_ITEMS]						= @PP_TOTAL_ITEMS,							
+				[SUBTOTAL_PURCHASE_ORDER]			= @PP_SUBTOTAL_PURCHASE_ORDER,				
+				[IVA_PURCHASE_ORDER]				= @PP_IVA_PURCHASE_ORDER,
+				[ADDITIONAL_TAXES_PURCHASE_ORDER]	= @PP_ADDITIONAL_TAXES_PURCHASE_ORDER,					
 				[ADDITIONAL_DISCOUNTS_PURCHASE_ORDER]=@PP_DISCOUNT_PURCHASE_ORDER,
-				[TOTAL_PURCHASE_ORDER]			= @PP_TOTAL_PURCHASE_ORDER,				
-				-- ============================	= -- ============================
-				[L_IS_BLANKET]					= @PP_L_IS_BLANKET,
-				-- ============================	= -- ============================
-				[F_CAMBIO]						= GETDATE(), 
-				[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
+				[TOTAL_PURCHASE_ORDER]				= @PP_TOTAL_PURCHASE_ORDER,				
+				-- ============================		= -- ============================
+				[L_IS_BLANKET]						= @PP_L_IS_BLANKET,
+				[C_INFO_QUOTATION]					= @PP_C_INFO_QUOTATION,
+				[TERMS_HEADER]						= @PP_TERMS_HEADER,
+				-- ============================		= -- ============================
+				[F_CAMBIO]							= GETDATE(), 
+				[K_USUARIO_CAMBIO]					= @PP_K_USUARIO_ACCION
 		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
 		IF @@ROWCOUNT = 0
 			BEGIN
@@ -1846,12 +1882,12 @@ BEGIN TRY
 					@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
 					@mailitem_id = @VP_ID_MAIL OUTPUT;
 
-					SELECT	@VP_SENT_STATUS = sent_status
-					FROM	msdb.dbo.sysmail_allitems
-					WHERE	mailitem_id = @VP_ID_MAIL
-
-					IF UPPER(@VP_SENT_STATUS)='SENT'
-					BEGIN
+					--SELECT	@VP_SENT_STATUS = sent_status						-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
+					--FROM	msdb.dbo.sysmail_allitems								-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
+					--WHERE	mailitem_id = @VP_ID_MAIL								-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
+																					-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
+					--IF UPPER(@VP_SENT_STATUS)='SENT'								-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
+					--BEGIN															-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
 						UPDATE	HEADER_PURCHASE_ORDER
 						SET		K_STATUS_PURCHASE_ORDER=11
 						WHERE	K_HEADER_PURCHASE_ORDER=@VP_PO_INT
@@ -1865,7 +1901,7 @@ BEGIN TRY
 						
 						-- QUITAR COMENTARIO CUANDO SE VALIDE EL CUERPO DEL MENSAJE
 						--EXECUTE [dbo].[PG_PR_ENVIAR CORREO]	0,139,  7
-					END
+					--END
 
 				END
 			END

@@ -495,7 +495,6 @@ ALTER TABLE [dbo].[ITEM] ADD
 --		FOREIGN KEY ( [K_VENDOR] ) 
 --		REFERENCES [dbo].[VENDOR] ( [K_VENDOR] )
 GO
-
 -- //////////////////////////////////////////////////////
 
 
@@ -508,6 +507,9 @@ ALTER TABLE [dbo].[ITEM]
 			[K_USUARIO_BAJA]			[INT] NULL,
 			[F_BAJA]					[DATETIME] NULL;
 GO
+
+-- ALTER TABLE [dbo].[ITEM]						-- DROP 20200820 PARA MODIFICACIÓN DE TABLA DE UNIDADES DE MEDIDA
+-- DROP CONSTRAINT [FK_UNIT_OF_ITEM_03]
 
 
 -- //////////////////////////////////////////////////////////////
