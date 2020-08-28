@@ -20,7 +20,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_
 	DROP PROCEDURE [dbo].[PG_LI_VENDOR]
 GO
 
--- EXECUTE [dbo].[PG_LI_VENDOR] 0,139,'',-1,-1	
+-- EXECUTE [dbo].[PG_LI_VENDOR] 0,139,'ACCESO',-1,-1
 CREATE PROCEDURE [dbo].[PG_LI_VENDOR]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -69,8 +69,8 @@ AS
 --	AND			VENDOR.K_USUARIO_CAMBIO=USUARIO.K_USUARIO
 				-- =============================
 	AND			(	VENDOR.K_VENDOR=@VP_K_FOLIO
-				OR	VENDOR.BUSINESS_NAME			LIKE '%'+@PP_BUSCAR+'%'
 				OR	VENDOR.D_VENDOR					LIKE '%'+@PP_BUSCAR+'%' 
+--				OR	VENDOR.BUSINESS_NAME			LIKE '%'+@PP_BUSCAR+'%'
 				OR	VENDOR.RFC_VENDOR				LIKE '%'+@PP_BUSCAR+'%'
 				OR	VENDOR.C_VENDOR					LIKE '%'+@PP_BUSCAR+'%' 
 				OR	VENDOR.EMAIL_1					LIKE '%'+@PP_BUSCAR+'%' 
@@ -265,7 +265,7 @@ BEGIN TRY
 				[K_USUARIO_ALTA], [F_ALTA], [K_USUARIO_CAMBIO], [F_CAMBIO],
 				[L_BORRADO], [K_USUARIO_BAJA], [F_BAJA]  )
 		VALUES	
-			(	@VP_K_VENDOR, @PP_D_VENDOR, 
+			(	@VP_K_VENDOR, UPPER(@PP_D_VENDOR), 
 				@PP_C_VENDOR, 10,
 				-- ===========================
 				@PP_D_VENDOR,	@PP_RFC_VENDOR, 
@@ -458,7 +458,7 @@ BEGIN TRY
 	BEGIN
 		UPDATE	VENDOR
 		SET		
-				[D_VENDOR]						= @PP_D_VENDOR,
+				[D_VENDOR]						= UPPER(@PP_D_VENDOR),
 				[C_VENDOR]						= @PP_C_VENDOR,
 				-- ========================== -- ===========================
 				[BUSINESS_NAME]					= @PP_D_VENDOR,				--@PP_BUSINESS_NAME,
