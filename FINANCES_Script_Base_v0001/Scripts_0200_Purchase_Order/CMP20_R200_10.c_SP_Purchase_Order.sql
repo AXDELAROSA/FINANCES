@@ -23,7 +23,7 @@ CREATE PROCEDURE [dbo].[PG_LI_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
-	@PP_BUSCAR						VARCHAR(200),
+	@PP_BUSCAR						VARCHAR(25),
 	@PP_K_STATUS_PURCHASE_ORDER		INT,
 	@PP_K_VENDOR					INT,
 	@PP_K_CURRENCY					INT,
@@ -83,6 +83,11 @@ AS
 				S_CURRENCY	, D_CURRENCY,
 				D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
 				-- =============================	
+				(	CASE
+					WHEN L_IS_BLANKET = 1 THEN 'SI'
+					ELSE	'NO'
+					END				)	AS SINO_BLANKET,
+				-- =============================	
 				HEADER_PURCHASE_ORDER.*
 				-- =============================	
 	FROM		HEADER_PURCHASE_ORDER
@@ -94,7 +99,7 @@ AS
 	INNER JOIN 	BD_GENERAL.DBO.CURRENCY	ON CURRENCY.K_CURRENCY=HEADER_PURCHASE_ORDER.K_CURRENCY
 				-- =============================
 	WHERE		(	HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@VP_K_FOLIO
-				OR	HEADER_PURCHASE_ORDER.ISSUED_BY_PURCHASE_ORDER			LIKE '%'+@PP_BUSCAR+'%'
+--				OR	HEADER_PURCHASE_ORDER.ISSUED_BY_PURCHASE_ORDER			LIKE '%'+@PP_BUSCAR+'%'
 				OR	HEADER_PURCHASE_ORDER.CONFIRMING_ORDER_WITH				LIKE '%'+@PP_BUSCAR+'%' 
 --				OR	HEADER_PURCHASE_ORDER.DELIVERY_TO						LIKE '%'+@PP_BUSCAR+'%'
 				OR	HEADER_PURCHASE_ORDER.C_PURCHASE_ORDER					LIKE '%'+@PP_BUSCAR+'%' )
@@ -165,6 +170,12 @@ AS
 						S_TERMS		, D_TERMS	 ,				
 						S_CURRENCY	, D_CURRENCY,
 						D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
+						-- =============================	
+						(	CASE
+							WHEN L_IS_BLANKET = 1 THEN 'SI'
+							ELSE	'NO'
+							END				)	AS SINO_BLANKET,
+						-- =============================	
 						HEADER_PURCHASE_ORDER.*
 						-- =============================	
 			FROM		HEADER_PURCHASE_ORDER
@@ -196,6 +207,12 @@ AS
 						S_TERMS		, D_TERMS	 ,				
 						S_CURRENCY	, D_CURRENCY,
 						D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
+						-- =============================	
+						(	CASE
+							WHEN L_IS_BLANKET = 1 THEN 'SI'
+							ELSE	'NO'
+							END				)	AS SINO_BLANKET,
+						-- =============================	
 						HEADER_PURCHASE_ORDER.*
 						-- =============================	
 			FROM		HEADER_PURCHASE_ORDER
@@ -262,6 +279,12 @@ AS
 					S_TERMS		, D_TERMS	 ,				
 					S_CURRENCY	, D_CURRENCY,
 					D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
+					-- =============================	
+					(	CASE
+						WHEN L_IS_BLANKET = 1 THEN 'SI'
+						ELSE	'NO'
+						END				)	AS SINO_BLANKET,
+					-- =============================	
 					HEADER_PURCHASE_ORDER.*
 					-- =============================	
 		FROM		HEADER_PURCHASE_ORDER
@@ -297,6 +320,12 @@ AS
 					S_TERMS		, D_TERMS	 ,				
 					S_CURRENCY	, D_CURRENCY,
 					D_DELIVERY_PURCHASE_ORDER AS D_DELIVERY_TO,
+					-- =============================	
+					(	CASE
+						WHEN L_IS_BLANKET = 1 THEN 'SI'
+						ELSE	'NO'
+						END				)	AS SINO_BLANKET,
+					-- =============================	
 					HEADER_PURCHASE_ORDER.*
 					-- =============================	
 		FROM		HEADER_PURCHASE_ORDER
@@ -327,11 +356,11 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_HEADER_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 GO
--- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,60
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,56
 -- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,32
 -- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,7
--- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,8008
--- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,7
+-- EXECUTE [dbo].[PG_SK_HEADER_PURCHASE_ORDER] 0,139,78
+-- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,78
 CREATE PROCEDURE [dbo].[PG_SK_HEADER_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -342,6 +371,7 @@ AS
 	-- ///////////////////////////////////////////			
 	SELECT		TOP (1)
 				-- ===========================	-- ===========================
+				FORMAT(HEADER_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER,'000000') AS NUMBER_PO,
 				-- PARA BLANKET PO
 				L_IS_BLANKET					AS L_IS_BLANKET_PO,
 				ISNULL(K_CUSTOMER,0)			AS K_CUSTOMER,
@@ -431,7 +461,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_DETAILS_PURCHASE_ORDER]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER]
 GO
--- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,33
+-- EXECUTE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER] 0,139,1
 CREATE PROCEDURE [dbo].[PG_SK_DETAILS_PURCHASE_ORDER]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -451,6 +481,7 @@ AS
 					K_PO_PRICE_LOG	AS K_PO_PRICE,
 					S_CURRENCY,
 					ITEM.K_CURRENCY,
+					S_UNIT_OF_MEASURE,
 					PART_NUMBER_ITEM_VENDOR,
 					D_ITEM,
 					-- ======================================================
@@ -464,6 +495,7 @@ AS
 					DETAILS_PURCHASE_ORDER.*
 		FROM		DETAILS_PURCHASE_ORDER
 		INNER JOIN	ITEM		ON	DETAILS_PURCHASE_ORDER.K_ITEM=ITEM.K_ITEM
+		INNER JOIN	BD_GENERAL.DBO.UNIT_OF_MEASURE ON ITEM.K_UNIT_OF_ITEM=UNIT_OF_MEASURE.K_UNIT_OF_MEASURE
 		INNER JOIN	BD_GENERAL.DBO.CURRENCY	ON	ITEM.K_CURRENCY=CURRENCY.K_CURRENCY
 		WHERE		DETAILS_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 		ORDER BY	K_DETAILS_PURCHASE_ORDER
@@ -474,6 +506,7 @@ AS
 					K_PO_PRICE_LOG	AS K_PO_PRICE,
 					S_CURRENCY,
 					ITEM.K_CURRENCY,
+					S_UNIT_OF_MEASURE,
 					PART_NUMBER_ITEM_VENDOR,
 					D_ITEM,
 					-- ======================================================
@@ -487,6 +520,7 @@ AS
 					DETAILS_PURCHASE_ORDER.*
 		FROM		DETAILS_PURCHASE_ORDER
 		INNER JOIN	ITEM		ON	DETAILS_PURCHASE_ORDER.K_ITEM=ITEM.K_ITEM
+		INNER JOIN	BD_GENERAL.DBO.UNIT_OF_MEASURE ON ITEM.K_UNIT_OF_ITEM=UNIT_OF_MEASURE.K_UNIT_OF_MEASURE
 		INNER JOIN	BD_GENERAL.DBO.CURRENCY	ON	ITEM.K_CURRENCY=CURRENCY.K_CURRENCY
 		WHERE		DETAILS_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 		ORDER BY	K_DETAILS_PURCHASE_ORDER
@@ -498,6 +532,7 @@ AS
 					K_PO_PRICE_LOG	AS K_PO_PRICE,
 					S_CURRENCY,
 					ITEM.K_CURRENCY,
+					S_UNIT_OF_MEASURE,
 					PART_NUMBER_ITEM_VENDOR,
 					D_ITEM,
 					DETAILS_PURCHASE_ORDER.QUANTITY_ORDER AS QUANTITY,
@@ -506,6 +541,7 @@ AS
 					DETAILS_PURCHASE_ORDER.*
 		FROM		DETAILS_PURCHASE_ORDER
 		INNER JOIN	ITEM		ON	DETAILS_PURCHASE_ORDER.K_ITEM=ITEM.K_ITEM
+		INNER JOIN	BD_GENERAL.DBO.UNIT_OF_MEASURE ON ITEM.K_UNIT_OF_ITEM=UNIT_OF_MEASURE.K_UNIT_OF_MEASURE
 		INNER JOIN	BD_GENERAL.DBO.CURRENCY	ON	ITEM.K_CURRENCY=CURRENCY.K_CURRENCY
 		WHERE		DETAILS_PURCHASE_ORDER.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 		ORDER BY	K_DETAILS_PURCHASE_ORDER
@@ -1803,7 +1839,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_UP_ESTATUS_PO_MANAGER_DPTO]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_UP_ESTATUS_PO_MANAGER_DPTO]
 GO
---		 EXECUTE [dbo].[PG_UP_ESTATUS_PO_MANAGER_DPTO]	0,139,  7,1
+--		 EXECUTE [dbo].[PG_UP_ESTATUS_PO_MANAGER_DPTO]	0,139,  2,1
 CREATE PROCEDURE [dbo].[PG_UP_ESTATUS_PO_MANAGER_DPTO]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -1879,111 +1915,18 @@ BEGIN TRY
 				END
 			END
 
-			-- SI EL ESTATUS SE ENCUENTRA EN (9) QUE ES APROBADO, SE ENVIA EL CORREO AL PROVEEDOR.
+			-- SI EL ESTATUS SE ENCUENTRA EN (9) QUE ES APROBADO POR GERENCIA DE PLANTA, 
+			-- SE ENVIA EL CORREO AL DEPARTAMENTO DE FINANZAS Y AL USUARIO QUE GENERÓ
+			-- SE ENVIA CORREO O NOTIFICACIÓN SEGÚN APLIQUE.
 			IF @VP_MENSAJE=''
 			BEGIN
 				IF @VP_SIGUIENTE_STATUS = 9
 				BEGIN
-					DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
-					DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
 					DECLARE @VP_PO_INT INT;
-					DECLARE @VP_SUBJECT NVARCHAR(MAX) ;
-					DECLARE @VP_BODY_HTML  NVARCHAR(MAX) ;
-					DECLARE @VP_ID_MAIL INT;
-					DECLARE @VP_SENT_STATUS VARCHAR(500);
-					----================================================================				
-								
-  					SET @VP_PO_INT = CAST(@VP_VALOR_PO AS INT)
-
-					----================================================================
-					-- CUANDO SE PONGA EN PRODUCTIVO SE DEBE QUITAR EL COMENTARIO A ESTA LÍNEA
-					-- PARA QUE SE ENVIE A TODOS LOS CONTACTOS.					
-					--	SELECT  @VP_RECIPIENTS	=	@VP_RECIPIENTS + ';' + EMAIL_1 + ';' + EMAIL_2
-					--								FROM	COMPRAS.dbo.VENDOR
-					--								WHERE   K_VENDOR = @VP_K_VENDOR
-					----================================================================
-					IF @PP_K_SISTEMA_EXE=0
-					BEGIN
-						SET @VP_FILE_PATH = '\\10.1.1.5\documents\Common\COMPRAS\REPORTES\POT_'+ CONVERT(VARCHAR(10),FORMAT(@VP_PO_INT,'000000')) +'.PDF'
-					END					
-					ELSE
-					--IF @PP_K_SISTEMA_EXE=0
-					BEGIN
-						-- USUARIO DEFAULT DE COMPRAS A DONDE SE ENVIARÁ EL CORREO.
-						SET @VP_RECIPIENTS = 'FABIOLAG@PEARLLEATHER.COM.MX'						
-						SET @VP_FILE_PATH = '\\10.1.1.5\documents\Common\COMPRAS\REPORTES\PO_'+ CONVERT(VARCHAR(10),FORMAT(@VP_PO_INT,'000000')) +'.PDF'  
-					END
+					SET @VP_PO_INT = CAST(@VP_VALOR_PO AS INT)
+					EXECUTE [PG_PR_ENVIAR CORREO_FINANZAS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
 					
-					----================================================================
-					-- SET @VP_RECIPIENTS = SUBSTRING(@VP_RECIPIENTS,2,LEN(@VP_RECIPIENTS))						
-					----================================================================
-					IF @PP_K_SISTEMA_EXE=0
-					BEGIN
-						SET @VP_SUBJECT = 'PEARL LEATHER [POT#' + CONVERT(VARCHAR(10),FORMAT(@VP_PO_INT,'000000')) +']'--CONVERT(VARCHAR(10),FORMAT(@VP_VALOR_PO,'000000'))+']'					
-					END
-					ELSE
-					BEGIN
-						SET @VP_SUBJECT = 'PEARL LEATHER [PO#' + CONVERT(VARCHAR(10),FORMAT(@VP_PO_INT,'000000')) +']'--CONVERT(VARCHAR(10),FORMAT(@VP_VALOR_PO,'000000'))+']'					
-					END
-					SET @VP_BODY_HTML =  
-					N'<p style="font-size:12.0pt;font-family:"Calisto MT",serif;color:#262626">'+
-					N'Buen día, <br><br>'+
-					N'Se envía orden de compra, favor de realizar el seguimiento correspondiente para la entrega.<br>'+
-					N'Favor de confirmar de recibido y fecha de entrega estimada.<br><br>'+
-					N'Saludos.<br> == = == = == = == = == = == = == = == = == = == = == = == = == = == = ==<br>'+
-					N'Good day, <br><br>'+
-					N'Purchase order is sent, please track it for delivery.<br>'+
-					N'Please confirm receipt and estimated delivery date.<br><br>'+
-					N'Regards.<br> </p> <p>'+
-					N'<span style="font-size:12.0pt;font-family:"Cambria",serif;color:#943634"><b>Fabiola Gerardo Arévalo | Compras</b></span><br>'+
-					N'<span style="font-family:"Cambria",serif;color:#D99594"><b>Dirección:</b></span>'+
-					N'<span style="font-family:"Cambria",serif;color:#D99594">Av. Rosa Maria Y. Fuentes 7050-A <b>|C.P.</b> 32320</span></br>'+
-					N'<span style="font-family:"Cambria",serif;color:#D99594"><b>Tel.</b>656-892-5800<b>|Ext:</b>121'+
-					N'<b>|Cel.</b> 656-103-4020<o:p></o:p></span><br><br></p>'+
-					N'<p><span style="font-size:10.0pt;font-family:"Cambria",serif;color:#943634"><b><u>RECEPCION DE MATERIAL <b>|</b> RECEIPT OF MATERIAL</u></b></p>'+
-					N'<p><span style="font-size:8.0pt;font-family:"Cambria",serif;color:#943634"><b>Lunes a Viernes | Monday to Friday: 7am -9am, 10am -2pm y 4pm -5:30pm</b></span></p>'
-
-					--N'<p style="color:blue; font-size:20px">	Buen día:<br>' +
-					--N'<tab1 style="white-space:pre">	</tab1>	Se adjunta orden de compra para que sea procesada a la brevedad.<br> Saludos, Gracias!</p>' +					
-					--N'<p style="color:black; font-size:20px"> == = == = == = == = == = == </p>'+					
-					--N'<p style="color:blue; font-size:20px">	Good Day:<br>'+
-					--N'<tab1 style="white-space:pre">	</tab1>	A purchase order is attached to be processed promptly.<br> Best regards, thanks!</p>'+					
-					--N'<p style="color:black; font-size:20px">== = == = == = == = == = == </p>'+					
-					--N'<p><span style="color:maroon; font-size:20px"><strong> Fabiola Gerardo Arévalo | Compras </strong></span><br>'+
-					--N'<span style="color:green; font-size:15px"> Dirección: Av. Rosa Maria Y. Fuentes 7050-A |C.P.32320 <br>'+
-					--N'Tel. 656-892-5800|Ext: 121|Cel. 656-103-4020 </span></p>'+					
-					--N'<p><span style="color:navy; font-size:15px"><strong> RECEPCION DE MATERIAL </strong></span><br>'+					
-					--N'<span style="color:black; font-size:15px"> Lunes a Viernes 7am -9am, 10am -2pm y 4pm -5:30pm </span></p>'				  								
-					
-					EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
-					@copy_recipients = 'ALEJANDROD@PEARLLEATHER.COM.MX',
-					@subject = @VP_SUBJECT,
-					@body = @VP_BODY_HTML,  
-					@body_format = 'HTML', 
-					@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
-					@mailitem_id = @VP_ID_MAIL OUTPUT;
-
-					--SELECT	@VP_SENT_STATUS = sent_status						-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
-					--FROM	msdb.dbo.sysmail_allitems								-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
-					--WHERE	mailitem_id = @VP_ID_MAIL								-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
-																					-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
-					--IF UPPER(@VP_SENT_STATUS)='SENT'								-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
-					--BEGIN															-- EL CORREO TARDA TIEMPO EN ENVIARLO, SE ACTUALIZARA DE OTRA MANERA.
-						UPDATE	HEADER_PURCHASE_ORDER
-						SET		K_STATUS_PURCHASE_ORDER=11
-						WHERE	K_HEADER_PURCHASE_ORDER=@VP_PO_INT
-
-						----IF @@ROWCOUNT = 0
-						----BEGIN
-						----	--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-						----	SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] Not sent mail, verify recipients and resend...'
-						----	RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
-						----END	
-						
-						-- QUITAR COMENTARIO CUANDO SE VALIDE EL CUERPO DEL MENSAJE
-						--EXECUTE [dbo].[PG_PR_ENVIAR CORREO]	0,139,  7
-					--END
-
+					EXECUTE [PG_PR_ENVIAR CORREO_USUARIOS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT					
 				END
 			END
 
@@ -2011,36 +1954,127 @@ END CATCH
 	-- //////////////////////////////////////////////////////////////
 GO
 
-
 -- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE ---> UPDATE / PO
--- // PARA ACTUALIZAR EL ESTATUS DE LA PO POR PARTE DE GERENCIA Y FINANZAS(ESTO ANTES DE QUE SE ENVÍE A IMPRIMIR)
+-- // STORED PROCEDURE ---> ENVIAR CORREO
+-- // CUANDO LA ORDEN DE COMPRA ES APROBADA POR GERENCIA DE PLANTA SE HACE EL ENVIO DE LA [PO] POR MEDIO ELECTRONICO.
 -- //////////////////////////////////////////////////////////////
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR CORREO]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_PR_ENVIAR CORREO]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR CORREO_FINANZAS]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_FINANZAS]
 GO
---		 EXECUTE [dbo].[PG_PR_ENVIAR CORREO]	0,139,  7
-CREATE PROCEDURE [dbo].[PG_PR_ENVIAR CORREO]
+--		 EXECUTE [dbo].[PG_PR_ENVIAR CORREO_FINANZAS]	0,139,  2
+CREATE PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_FINANZAS]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
-	@VP_PO_INT						[INT]
+	@PP_VALOR_PO					INT
+AS
+	BEGIN
+		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
+		DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
+--		DECLARE @VP_PO_INT INT;
+		DECLARE @VP_SUBJECT NVARCHAR(MAX) ;
+		DECLARE @VP_BODY_HTML  NVARCHAR(MAX) ;
+		DECLARE @VP_ID_MAIL INT;
+		DECLARE @VP_SENT_STATUS VARCHAR(500);
+		----================================================================				
+					
+				--SET @VP_PO_INT = CAST(@PP_VALOR_PO AS INT)
+
+		----================================================================
+		-- CUANDO SE PONGA EN PRODUCTIVO SE DEBE QUITAR EL COMENTARIO A ESTA LÍNEA
+		-- PARA QUE SE ENVIE A TODOS LOS CONTACTOS.					
+		--	SELECT  @VP_RECIPIENTS	=	@VP_RECIPIENTS + ';' + EMAIL_1 + ';' + EMAIL_2
+		--								FROM	COMPRAS.dbo.VENDOR
+		--								WHERE   K_VENDOR = @VP_K_VENDOR
+		----================================================================
+		IF @PP_K_SISTEMA_EXE=1
+		--BEGIN
+		--	SET @VP_FILE_PATH = '\\10.1.1.5\documents\Common\COMPRAS\REPORTES\POT_'+ CONVERT(VARCHAR(10),FORMAT(@@PP_VALOR_PO,'000000')) +'.PDF'
+		--END					
+		--ELSE
+		----IF @PP_K_SISTEMA_EXE=0
+		BEGIN
+			-- USUARIO DEFAULT DE COMPRAS A DONDE SE ENVIARÁ EL CORREO.
+			SET @VP_RECIPIENTS = 'FABIOLAG@PEARLLEATHER.COM.MX'						
+		END
+			SET @VP_FILE_PATH = '\\10.1.1.5\documents\Common\COMPRAS\REPORTES\PO_'+ CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +'.PDF'  
+		
+		----================================================================
+		-- SET @VP_RECIPIENTS = SUBSTRING(@VP_RECIPIENTS,2,LEN(@VP_RECIPIENTS))						
+		----================================================================
+		--IF @PP_K_SISTEMA_EXE=1
+		--BEGIN
+		--	SET @VP_SUBJECT = 'PEARL LEATHER [POT#' + CONVERT(VARCHAR(10),FORMAT(@@PP_VALOR_PO,'000000')) +']'--CONVERT(VARCHAR(10),FORMAT(@VP_VALOR_PO,'000000'))+']'					
+		--END
+		--ELSE
+		--BEGIN
+			SET @VP_SUBJECT = 'PEARL LEATHER [PO#' + CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +']'--CONVERT(VARCHAR(10),FORMAT(@VP_VALOR_PO,'000000'))+']'					
+		--END
+
+		SET @VP_BODY_HTML =  
+		N'<p style="color:black; font-size:12.0pt;font-family:"Calisto MT",serif">'+
+		N'Buen día, <br><br>'+
+		N'Se envía orden de compra, favor de realizar el seguimiento correspondiente para la entrega.<br>'+
+		N'Favor de confirmar de recibido y fecha de entrega estimada.<br><br>'+
+		N'Saludos.<br> == = == = == = == = == = == = == = == = == = == = == = == = == = == = ==<br>'+
+		N'Good day, <br><br>'+
+		N'Purchase order is sent, please track it for delivery.<br>'+
+		N'Please confirm receipt and estimated delivery date.<br><br>'+
+		N'Regards.<br> </p> <p>'+
+
+		N'<p><span style="color:maroon; font-size:12.0pt"><b>Fabiola Gerardo Arévalo | Compras</b></span><br>'+
+		N'<span style="color:lightpink; font-size:11pt"><b>Dirección:</b></span>'+
+		N'<span style="color:lightpink; font-size:11pt">Av. Rosa Maria Y. Fuentes 7050-A <b>|C.P.</b> 32320</span></br>'+
+		N'<span style="color:lightpink; font-size:11pt"><b>Tel.</b>656-892-5800<b>|Ext:</b>121'+
+		N'<b>|Cel.</b> 656-103-4020<o:p></o:p></span><br><br></p>'+
+		N'<p><span style="color:maroon; font-size:11pt"><b><u>RECEPCION DE MATERIAL <b>|</b> RECEIPT OF MATERIAL</u></b></span></p>'+
+		N'<p><span style="color:maroon; font-size: 8pt"><b>Lunes a Viernes | Monday to Friday: 7am -9am, 10am -2pm y 4pm -5:30pm</b></span></p>'
+		
+		EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
+--		@copy_recipients = 'ALEJANDROD@PEARLLEATHER.COM.MX',
+		@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
+		@subject = @VP_SUBJECT,
+		@body = @VP_BODY_HTML,  
+		@body_format = 'HTML', 
+		@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
+		@mailitem_id = @VP_ID_MAIL OUTPUT;
+
+			UPDATE	HEADER_PURCHASE_ORDER
+			SET		K_STATUS_PURCHASE_ORDER=11
+			WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
+	END
+GO
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> ENVIAR CORREO
+-- // PARA ENVIAR CORREO A LOS USUARIOS QUE GENERARON LA ORDEN DE COMPRA.
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR CORREO_USUARIOS]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_USUARIOS]
+GO
+--		 EXECUTE [dbo].[PG_PR_ENVIAR CORREO_USUARIOS]	0,139,  2
+CREATE PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_USUARIOS]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_VALOR_PO					INT
 AS
 DECLARE @VP_MENSAJE			VARCHAR(500)=''
 DECLARE @VP_ESTATUS_PO		INT
 -- /////////////////////////////////////////////////////////////////////
-BEGIN TRANSACTION 
-BEGIN TRY
+--BEGIN TRANSACTION 
+--BEGIN TRY
 	SELECT	@VP_ESTATUS_PO	=	K_STATUS_PURCHASE_ORDER
 	FROM	HEADER_PURCHASE_ORDER
-	WHERE	K_HEADER_PURCHASE_ORDER=@VP_PO_INT
+	WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
 	AND		L_BORRADO<>1
 	
-	IF NOT (@VP_ESTATUS_PO IS NULL) OR @VP_ESTATUS_PO=9
+	IF @VP_ESTATUS_PO=11
 	BEGIN
 		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
 		--DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
-		--DECLARE @VP_PO_INT INT;
+		--DECLARE @PP_PO_INT INT;
 
 		DECLARE @VP_SUBJECT NVARCHAR(MAX) ;
 		DECLARE @VP_BODY_HTML  NVARCHAR(MAX) ;
@@ -2050,72 +2084,65 @@ BEGIN TRY
 		--	PARA PRUEBAS
 		--SELECT	@VP_RECIPIENTS	=	@VP_RECIPIENTS + ';' + CORREO_GERENTE.CORREO_USUARIO_PEARL + ';' +
 		--												   CORREO_USUARIO.CORREO_USUARIO_PEARL
+		
 		SELECT	@VP_RECIPIENTS	=	@VP_RECIPIENTS + ';' + CORREO_USUARIO.CORREO_USUARIO_PEARL
+		
 		FROM	HEADER_PURCHASE_ORDER
 		LEFT JOIN BD_GENERAL.DBO.USUARIO_PEARL	AS CORREO_USUARIO ON HEADER_PURCHASE_ORDER.K_USUARIO_ALTA=CORREO_USUARIO.K_USUARIO_PEARL
 		--LEFT JOIN BD_GENERAL.DBO.USUARIO_PEARL	AS CORREO_GERENTE ON HEADER_PURCHASE_ORDER.K_APPROVED_BY =CORREO_GERENTE.K_EMPLEADO_PEARL
-		WHERE	K_HEADER_PURCHASE_ORDER=@VP_PO_INT
+		WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
 					
 		----================================================================
-		SET @VP_SUBJECT = 'APROBADA [PO#' + CONVERT(VARCHAR(10),FORMAT(@VP_PO_INT,'000000')) +']'
 		
-		SET @VP_BODY_HTML =  
-		N'<p style="color:blue; font-size:20px">	Buen día:<br>' +
-		N'La orden de compra ha sido aprobada por Gerencia de Planta.<br>'+
-		N'Si el proveedor cuenta con dirección de correo electrónico agregada, <br>'+
-		N'el formato será enviado automáticamente al destinatario, en caso contrario, <br>'+
-		N'el departamento de finanzas le dará seguimiento. <br></p>'+
-		
-		N'<p><span style="color:maroon; font-size:20px"><strong> Fabiola Gerardo Arévalo | Compras </strong></span><br>'+
-		N'<span style="color:green; font-size:15px"> Dirección: Av. Rosa Maria Y. Fuentes 7050-A |C.P.32320 <br>'+
-		N'Tel. 656-892-5800|Ext: 121|Cel. 656-103-4020 </span></p>'+
-		N'<p><span style="color:navy; font-size:15px"><strong> RECEPCION DE MATERIAL </strong></span><br>'+
-		N'<span style="color:black; font-size:15px"> Lunes a Viernes 7am -9am, 10am -2pm y 4pm -5:30pm </span></p>'					  								
+			IF LEN(@VP_RECIPIENTS)>5
+			BEGIN
+
+				SET @VP_SUBJECT = '[PO#' + CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +'] APROBADA'
+				
+				SET @VP_BODY_HTML =  
+				--N'<p style="color:#262626; font-size:20px">Buen día:<br>' +
+				N'<span style="color:black; font-size:12pt">	Buen día:<br>' +
+				N'La orden de compra indicada en el asunto del mensaje, ha sido aprobada por Gerencia de Planta.<br>'+
+				N'Puedes Verificar el estatus del pedido en la pantalla donde generaste la Orden.<br><br>'+
+				N'Saludos.</span><br><br>'+
+				--N'Si el proveedor cuenta con dirección de correo electrónico agregada, <br>'+
+				--N'el formato será enviado automáticamente al destinatario, en caso contrario, <br>'+
+				--N'el departamento de finanzas le dará seguimiento. <br></p>'+
 	
-			EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
-			--	@copy_recipients = 'ALEJANDROD@PEARLLEATHER.COM.MX',
-			@subject = @VP_SUBJECT,
-			@body = @VP_BODY_HTML,  
-			@body_format = 'HTML', 
-			--@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
-			@mailitem_id = @VP_ID_MAIL OUTPUT;
+				N'<p><span style="color:maroon; font-size:12.0pt"><b>Fabiola Gerardo Arévalo | Compras</b></span><br>'+
+				N'<span style="color:lightpink; font-size:11pt"><b>Dirección:</b></span>'+
+				N'<span style="color:lightpink; font-size:11pt">Av. Rosa Maria Y. Fuentes 7050-A <b>|C.P.</b> 32320</span></br>'+
+				N'<span style="color:lightpink; font-size:11pt"><b>Tel.</b>656-892-5800<b>|Ext:</b>121'+
+				N'<b>|Cel.</b> 656-103-4020<o:p></o:p></span><br><br></p>'+
+				N'<p><span style="color:maroon; font-size:11pt"><b><u>RECEPCION DE MATERIAL <b>|</b> RECEIPT OF MATERIAL</u></b></span></p>'+
+				N'<p><span style="color:maroon; font-size: 8pt"><b>Lunes a Viernes | Monday to Friday: 7am -9am, 10am -2pm y 4pm -5:30pm</b></span></p>'
 
-			SELECT	@VP_SENT_STATUS = sent_status
-			FROM	msdb.dbo.sysmail_allitems
-			WHERE	mailitem_id = @VP_ID_MAIL
 
-			--IF UPPER(@VP_SENT_STATUS)='SENT'
-			--BEGIN
-			--	UPDATE	HEADER_PURCHASE_ORDER
-			--	SET		K_STATUS_PURCHASE_ORDER=11
-			--	WHERE	K_HEADER_PURCHASE_ORDER=@VP_PO_INT
-
-				--IF @@ROWCOUNT = 0
-				--BEGIN
-				--	--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-				--	SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] Not sent mail, verify recipients and resend...'
-				--	RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
-				--END	
-			--END
+					EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
+					@subject = @VP_SUBJECT,
+					@body = @VP_BODY_HTML,  
+					@body_format = 'HTML',
+					@mailitem_id = @VP_ID_MAIL OUTPUT;
+			END
 		END
 	-- ////////////////////////////////////////////////////////////////
 	-- ///////////////////////////////////////////////////////////////
-COMMIT TRANSACTION 
-END TRY
+--COMMIT TRANSACTION 
+--END TRY
 
-BEGIN CATCH
-	/* Ocurrió un error, deshacemos los cambios*/ 
-	ROLLBACK TRANSACTION
-	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
-	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
-	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
-END CATCH
--- /////////////////////////////////////////////////////////////////////	
-	IF @VP_MENSAJE<>''
-	BEGIN
-		SET		@VP_MENSAJE = 'Not is possible [SEND MAIL] at [USERS PEARL]: ' + @VP_MENSAJE 
-	END
-	SELECT	@VP_MENSAJE AS MENSAJE, @VP_PO_INT AS CLAVE
+--BEGIN CATCH
+--	/* Ocurrió un error, deshacemos los cambios*/ 
+--	ROLLBACK TRANSACTION
+--	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
+--	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
+--	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
+--END CATCH
+---- /////////////////////////////////////////////////////////////////////	
+--	IF @VP_MENSAJE<>''
+--	BEGIN
+--		SET		@VP_MENSAJE = 'Not is possible [SEND MAIL] at [USERS PEARL]: ' + @VP_MENSAJE 
+--	END
+--	SELECT	@VP_MENSAJE AS MENSAJE, @PP_VALOR_PO AS CLAVE
 	-- //////////////////////////////////////////////////////////////
 GO
 
