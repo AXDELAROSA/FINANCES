@@ -14,10 +14,6 @@ GO
 -- //////////////////////////////////////////////////////////////
 -- // DROPs
 -- //////////////////////////////////////////////////////////////
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PO_HEADER_PURCHASE_ORDER]') AND type in (N'U'))
-	DROP TABLE [dbo].[HEADER_PURCHASE_ORDER_LIVE]
-GO
-
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DETAILS_BLANKET_PURCHASE_ORDER]') AND type in (N'U'))
 	DROP TABLE [dbo].[DETAILS_BLANKET_PURCHASE_ORDER]
 GO
