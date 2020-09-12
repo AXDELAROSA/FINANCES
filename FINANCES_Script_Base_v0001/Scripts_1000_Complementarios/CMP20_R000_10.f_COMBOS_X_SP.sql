@@ -175,6 +175,9 @@ AS
 GO
 
 -- //////////////////////////////////////////////////////////////
+--	SE UTILIZAN EN LA FO BACKING_YARDAGE
+-- //////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> PARA CREAR COMBO EN CASCADA DEPENDE EL VENDOR SELECCIONADO.
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_ITEM_HIJO]') AND type in (N'P', N'PC'))
@@ -291,6 +294,8 @@ AS
 GO
 
 -- //////////////////////////////////////////////////////////////
+--	SE UTILIZAN EN LA FO BACKING_YARDAGE
+-- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> PARA SELECCIONAR LAS SIGLAS DE LAS UNIDADES DE MEDIDA
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_S_UOM]') AND type in (N'P', N'PC'))
@@ -336,54 +341,6 @@ AS
 
 	-- ////////////////////////////////////////////////////
 GO
-
-
---IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_COLOR_IMITMIDX_SQL]') AND type in (N'P', N'PC'))
---	DROP PROCEDURE [dbo].[PG_CB_COLOR_IMITMIDX_SQL]
---GO
-
-
---CREATE PROCEDURE [dbo].[PG_CB_COLOR_IMITMIDX_SQL]
---	@PP_K_SISTEMA_EXE			INT,
---	@PP_K_USUARIO				INT,
---	--============================
---	@PP_L_CON_TODOS				INT
---AS
---	DECLARE @VP_TA_CATALOGO	AS TABLE
---				(	TA_K_CATALOGO		INT,
---					TA_D_CATALOGO		VARCHAR(50),
---					TA_O_CATALOGO		INT,
---					TA_L_DELETED		INT,	
---					TA_L_ACTIVO			INT			 )
-	
---	INSERT INTO @VP_TA_CATALOGO 
---	SELECT	A4GLIDENTITY			AS TA_K_CATALOGO,
---			LTRIM(RTRIM(ITEM_NO))	AS TA_D_CATALOGO,
---			0						AS TA_O_CATALOGO,
---			0						AS L_DELETED, 
---			1						AS L_ACTIVO
---	FROM IMITMIDX_SQL 
---	WHERE ITEM_NO LIKE 'F%'
---	AND LEN(RTRIM(LTRIM(ITEM_NO)))=7
---	ORDER BY TA_D_CATALOGO 
-
-
---	IF @PP_L_CON_TODOS=1
---		INSERT INTO @VP_TA_CATALOGO
---				( TA_K_CATALOGO,	TA_D_CATALOGO,	TA_O_CATALOGO, TA_L_DELETED, TA_L_ACTIVO	)
---			VALUES
---				( -1,				'( TODOS )',	-999,		   0,			 1				)
-
---	SELECT	TA_K_CATALOGO	AS K_COMBOBOX,
---				TA_D_CATALOGO	AS D_COMBOBOX 
---		FROM	@VP_TA_CATALOGO
---		ORDER BY TA_O_CATALOGO, TA_D_CATALOGO 
-
---	-- ==========================================
-		
---	-- ////////////////////////////////////////////////////
---GO
-
 
 
 -- ///////////////////////////////////////////////////////////////////////////////////////////////////////
