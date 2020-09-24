@@ -14,6 +14,10 @@ GO
 -- //////////////////////////////////////////////////////////////
 -- // DROPs
 -- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DETAILS_BPO_RECIBO]') AND type in (N'U'))
+	DROP TABLE [dbo].[DETAILS_BPO_RECIBO]
+GO
+
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DETAILS_BPO_PEDIDO]') AND type in (N'U'))
 	DROP TABLE [dbo].[DETAILS_BPO_PEDIDO]
 GO
@@ -140,7 +144,44 @@ GO
 --		FOREIGN KEY ( K_HEADER_PURCHASE_ORDER ) 
 --		REFERENCES [dbo].[HEADER_PURCHASE_ORDER] (K_HEADER_PURCHASE_ORDER )
 --GO
+ALTER TABLE [dbo].[DETAILS_BPO_PEDIDO] 
+	ADD		[K_USUARIO_ALTA]			[INT] NULL			,
+			[F_ALTA]					[DATETIME] NULL		,
+			[K_USUARIO_CAMBIO]			[INT] NULL			,
+			[F_CAMBIO]					[DATETIME] NULL,
+			[L_BORRADO]					[INT] NULL,
+			[K_USUARIO_BAJA]			[INT] NULL,
+			[F_BAJA]					[DATETIME] NULL;
+GO
 
+
+-- ////////////////////////////////////////////////////////////////
+-- //					DETAILS_BPO_RECIBO
+-- ////////////////////////////////////////////////////////////////
+CREATE TABLE [dbo].[DETAILS_BPO_RECIBO] (
+	[K_DETAILS_BPO_RECIBO]					[INT] IDENTITY (1,1)	NOT NULL,
+	[K_HEADER_PURCHASE_ORDER]				[INT] NOT NULL,
+	[K_ORDEN_COMPRA_PEDIDO]					[VARCHAR](50) NOT NULL,
+	-- ============================
+--	[K_DETAILS_BPO_PEDIDO]					[INT] NOT NULL,
+	[K_ITEM]								[INT] NOT NULL,
+	-- ============================
+--	[QUANTITY_ORDER]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
+	-- ============================
+	[QUANTITY_RECEIVED]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
+--	[QUANTITY_PENDING]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[DETAILS_BPO_RECIBO] 
+	ADD		[K_USUARIO_ALTA]			[INT] NOT NULL			,
+			[F_ALTA]					[DATETIME] NOT NULL		,
+			[K_USUARIO_CAMBIO]			[INT] NOT NULL			,
+			[F_CAMBIO]					[DATETIME] NOT NULL,
+			[L_BORRADO]					[INT] NULL,
+			[K_USUARIO_BAJA]			[INT] NULL,
+			[F_BAJA]					[DATETIME] NULL;
+GO
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
