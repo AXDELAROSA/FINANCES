@@ -6,16 +6,8 @@ SELECT * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
 select * from HIDESHDR_SQL   
  --inner join HIDESLIN_SQL on  HIDESLIN_SQL.FILENO = HIDESHDR_SQL.FILENO
- WHERE TDATE >= '20200901' AND TDATE<= '20200903'
- ORDER BY TDATE, TYPE, COLOR
+ WHERE TDATE = '20200912' AND TYPE = 'DX9 NAPPA'
 
- DECLARE @VP_TOTAL_HIDE INT, @VP_TOTAL_SQF DECIMAL(13,4)
- SELECT	@VP_TOTAL_HIDE	= SUM(CONVERT(INT,THIDES)),
-									@VP_TOTAL_SQF	= SUM(CONVERT(DECIMAL(13,2),TAREA))
-							FROM HIDESHDR_SQL   
-							WHERE LTRIM(RTRIM(TDATE)) =  LTRIM(RTRIM('20200902'))
-							AND TYPE ='WU9 NAPPA'
-SELECT @VP_TOTAL_HIDE, @VP_TOTAL_SQF
 
  select /*TDATE, TYPE, COLOR,*/ SUM(CONVERT(DECIMAL(13,4),THIDES)) AS THIDES,
  SUM(CONVERT(DECIMAL(13,4),TAREA)) AS TOTAL_SQF
@@ -43,10 +35,27 @@ SELECT @VP_TOTAL_HIDE, @VP_TOTAL_SQF
  --AND LTRIM(RTRIM(HIDE))  IN ('0037')
  --AND PCOLOR = 'FWLCPX7'
 
+ SELECT TOP 10 * 
+ FROM pf_schst 
+ WHERE TYPE='e' and n_emb='1' and cdate2='20200924'
 
- select * from pf_schst where type='e' and n_emb='1' and cdate2='20200922'
+ 
+SELECT TOP 100 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
+
+ SELECT CDATE, pf_schst.prod_cat, item_desc_1 as [TYPE], pf_schst.part_no, pf_schst.cus_part_no , SUM(qty) 'QTY Kits', packing_no ,inv_no AS INVOICE
+ FROM pf_schst 
+ INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+ WHERE TYPE='e' and n_emb='1' and cdate2='20200916'
+ GROUP BY CDATE, pf_schst.prod_cat, item_desc_1, part_no, cus_part_no, packing_no, inv_no
+ ORDER BY CDATE, item_desc_1, packing_no ASC
 
 
+
+select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551725'
+select item_no,cus_item_no,item_desc_1,qty_to_ship,unit_price from OELINHST_SQL where inv_no='551725'
+
+
+ SELECT SUBSTRING('PMWCFCLCPRDX9', (LEN(LTRIM(RTRIM('PMWCFCLCPRDX9'))) - 5), 6)
 
 
 
