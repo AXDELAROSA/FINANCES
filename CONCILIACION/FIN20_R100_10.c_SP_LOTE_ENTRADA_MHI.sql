@@ -311,15 +311,35 @@ CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 	-- ===========================
 AS
 
-	
- SELECT CDATE, pf_schst.prod_cat, item_desc_1 as [TYPE], pf_schst.part_no, pf_schst.cus_part_no , SUM(qty) 'QTY Kits', packing_no ,inv_no AS INVOICE
- FROM pf_schst 
- INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
- WHERE TYPE='e' and n_emb='1' and cdate2='20200916'
- GROUP BY CDATE, pf_schst.prod_cat, item_desc_1, part_no, cus_part_no, packing_no, inv_no
- ORDER BY CDATE, item_desc_1, packing_no ASC
+
+
 
 	-- //////////////SE CREA TABLA TEMPORAL PARA INGRESAR TOTALES/////////////////////////////
+	
+	SELECT	CONVERT(DATE, CDATE) CDATE, 
+			LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
+			LTRIM(RTRIM(item_desc_1)) TYPE, 
+			LTRIM(RTRIM(pf_schst.part_no)), 
+			LTRIM(RTRIM(pf_schst.cus_part_no)), 
+			SUM(qty) QTY, 
+			LTRIM(RTRIM(packing_no)),
+			LTRIM(RTRIM(inv_no))
+	FROM pf_schst 
+	INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+	INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+	WHERE TYPE='e' 
+	AND CDATE >= '20200701' 
+	AND CDATE <= '20200731' 
+	AND	(	packing_no IS NOT NULL
+				OR inv_no IS NOT NULL )
+	GROUP BY	CDATE, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
+				LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),  LTRIM(RTRIM(packing_no)), 
+				LTRIM(RTRIM(inv_no)), LTRIM(RTRIM(item_desc_1))
+	ORDER BY	LTRIM(RTRIM(item_desc_1)), LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
+				CDATE, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)),
+				LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no))  ASC
+
+		-- //////////////SE CREA TABLA TEMPORAL PARA INGRESAR TOTALES/////////////////////////////
 	DECLARE @VP_ENTRADA_PIEL_MHI_TBL AS TABLE(
 			ID			INT	IDENTITY(1,1),
 			TDATE		VARCHAR(50),

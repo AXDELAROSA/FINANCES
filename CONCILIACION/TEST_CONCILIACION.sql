@@ -38,22 +38,26 @@ select * from HIDESHDR_SQL
  SELECT TOP 10 * 
  FROM pf_schst 
  WHERE TYPE='e' and n_emb='1' and cdate2='20200924'
-
  
 SELECT TOP 100 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
- SELECT CDATE, pf_schst.prod_cat, item_desc_1 as [TYPE], pf_schst.part_no, pf_schst.cus_part_no , SUM(qty) 'QTY Kits', packing_no ,inv_no AS INVOICE
+ SELECT  CDATE, pf_schst.prod_cat, item_desc_1 as [TYPE], pf_schst.part_no, pf_schst.cus_part_no , SUM(qty) 'QTY Kits', packing_no ,inv_no AS INVOICE
  FROM pf_schst 
  INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
- WHERE TYPE='e' and n_emb='1' and cdate2='20200916'
- GROUP BY CDATE, pf_schst.prod_cat, item_desc_1, part_no, cus_part_no, packing_no, inv_no
+ WHERE TYPE='e' and n_emb='1' 
+ AND CDATE >= '20200915' AND CDATE<= '20200916'
+ GROUP BY  CDATE, item_desc_1, pf_schst.prod_cat, part_no, cus_part_no, packing_no, inv_no
  ORDER BY CDATE, item_desc_1, packing_no ASC
 
-
+ select *   FROM pf_schst where inv_no = '551725'
 
 select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551725'
+
+SELECT * FROM imcatfil_sql where prod_cat = 'PWL'
+
 select item_no,cus_item_no,item_desc_1,qty_to_ship,unit_price from OELINHST_SQL where inv_no='551725'
 
+select top 100 filler_0001,prc_or_disc_1 from OEPRCFIL_SQL
 
  SELECT SUBSTRING('PMWCFCLCPRDX9', (LEN(LTRIM(RTRIM('PMWCFCLCPRDX9'))) - 5), 6)
 
