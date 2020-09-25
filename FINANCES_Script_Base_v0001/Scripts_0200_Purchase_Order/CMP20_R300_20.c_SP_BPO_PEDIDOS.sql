@@ -128,6 +128,60 @@ GO
 
 
 -- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> SELECT / PARA MOSTRAR EL DETALLE 
+-- // DE LA ORDEN PEDIDO CON LAS CANTIDADES RECIBIDAS Y PEDIDAS.
+-- // ES EL SEGUNDO LISTADO DE LA PANTALLA DE RECIBOS
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD]
+GO
+--		 EXECUTE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD] 0,139,19,'00019-00001'
+--		 EXECUTE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD] 0,139,16,'00016-00001'
+CREATE PROCEDURE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_K_HEADER_PURCHASE_ORDER		INT,
+	@PP_K_ORDEN_COMPRA_PEDIDO		VARCHAR(50)
+AS
+	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
+	-- ///////////////////////////////////////////			
+	SELECT		
+				 K_ORDEN_COMPRA_PEDIDO
+				,DETAILS_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER
+				,DETAILS_BPO_PEDIDO.K_DETAILS_BPO_PEDIDO	--HEADER_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO
+				,DETAILS_BPO_PEDIDO.K_ITEM
+				-- ===========================	-- ===========================
+				,S_UNIT_OF_MEASURE
+				,PART_NUMBER_ITEM_VENDOR
+				,PART_NUMBER_ITEM_PEARL
+				,D_ITEM
+				-- ===========================	-- ===========================
+				,QUANTITY_ORDER
+				,(	
+					SELECT	ISNULL(SUM(QUANTITY_RECEIVED),0)
+					FROM	DETAILS_BPO_RECIBO,ITEM 
+					WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER 
+					AND		K_ORDEN_COMPRA_PEDIDO=@PP_K_ORDEN_COMPRA_PEDIDO
+					AND		DETAILS_BPO_RECIBO.K_ITEM=ITEM.K_ITEM
+					) AS QUANTITY_RECEIVED
+				-- =============================	
+	FROM		DETAILS_BPO_PEDIDO
+	INNER JOIN	ITEM		ON	DETAILS_BPO_PEDIDO.K_ITEM=ITEM.K_ITEM
+	INNER JOIN	BD_GENERAL.DBO.UNIT_OF_MEASURE ON ITEM.K_UNIT_OF_ITEM=UNIT_OF_MEASURE.K_UNIT_OF_MEASURE
+	--,HEADER_BPO_PEDIDO
+				-- =============================
+	--WHERE		HEADER_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER=DETAILS_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER
+	--AND			HEADER_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO=DETAILS_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO
+	WHERE		DETAILS_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
+	AND			DETAILS_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO=@PP_K_ORDEN_COMPRA_PEDIDO
+	--AND			HEADER_BPO_PEDIDO.L_BORRADO<>1		
+	-- ////////////////////////////////////////////////////////////////////
+GO
+
+
+
+-- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> SELECT / FICHA
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_HEADER_BPO_PEDIDO]') AND type in (N'P', N'PC'))
@@ -406,57 +460,6 @@ AS
 GO
 
 
--- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE ---> SELECT / PARA MOSTRAR EL DETALLE 
--- // DE LA ORDEN PEDIDO CON LAS CANTIDADES RECIBIDAS Y PEDIDAS.
--- // ES EL SEGUNDO LISTADO DE LA PANTALLA DE RECIBOS
--- //////////////////////////////////////////////////////////////
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_DETAILS_PEDIDO_CANTIDAD]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_SK_DETAILS_PEDIDO_CANTIDAD]
-GO
---		 EXECUTE [dbo].[PG_SK_DETAILS_PEDIDO_CANTIDAD] 0,139,19,'00019-00001'
---		 EXECUTE [dbo].[PG_SK_DETAILS_PEDIDO_CANTIDAD] 0,139,16,'00016-00001'
-CREATE PROCEDURE [dbo].[PG_SK_DETAILS_PEDIDO_CANTIDAD]
-	@PP_K_SISTEMA_EXE				INT,
-	@PP_K_USUARIO_ACCION			INT,
-	-- ===========================
-	@PP_K_HEADER_PURCHASE_ORDER		INT,
-	@PP_K_ORDEN_COMPRA_PEDIDO		VARCHAR(50)
-AS
-	DECLARE @VP_MENSAJE				VARCHAR(300) = ''	
-	-- ///////////////////////////////////////////			
-	SELECT		
-				 K_ORDEN_COMPRA_PEDIDO
-				,DETAILS_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER
-				,DETAILS_BPO_PEDIDO.K_DETAILS_BPO_PEDIDO	--HEADER_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO
-				,DETAILS_BPO_PEDIDO.K_ITEM
-				-- ===========================	-- ===========================
-				,S_UNIT_OF_MEASURE
-				,PART_NUMBER_ITEM_VENDOR
-				,PART_NUMBER_ITEM_PEARL
-				,D_ITEM
-				-- ===========================	-- ===========================
-				,QUANTITY_ORDER
-				,(	
-					SELECT	ISNULL(SUM(QUANTITY_RECEIVED),0)
-					FROM	DETAILS_BPO_RECIBO,ITEM 
-					WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER 
-					AND		K_ORDEN_COMPRA_PEDIDO=@PP_K_ORDEN_COMPRA_PEDIDO
-					AND		DETAILS_BPO_RECIBO.K_ITEM=ITEM.K_ITEM
-					) AS QUANTITY_RECEIVED
-				-- =============================	
-	FROM		DETAILS_BPO_PEDIDO
-	INNER JOIN	ITEM		ON	DETAILS_BPO_PEDIDO.K_ITEM=ITEM.K_ITEM
-	INNER JOIN	BD_GENERAL.DBO.UNIT_OF_MEASURE ON ITEM.K_UNIT_OF_ITEM=UNIT_OF_MEASURE.K_UNIT_OF_MEASURE
-	--,HEADER_BPO_PEDIDO
-				-- =============================
-	--WHERE		HEADER_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER=DETAILS_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER
-	--AND			HEADER_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO=DETAILS_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO
-	WHERE		DETAILS_BPO_PEDIDO.K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	AND			DETAILS_BPO_PEDIDO.K_ORDEN_COMPRA_PEDIDO=@PP_K_ORDEN_COMPRA_PEDIDO
-	--AND			HEADER_BPO_PEDIDO.L_BORRADO<>1		
-	-- ////////////////////////////////////////////////////////////////////
-GO
 
 
 -- //////////////////////////////////////////////////////////////
@@ -490,7 +493,7 @@ AS
 				-- ===========================	-- ===========================
 				,DETAILS_BPO_RECIBO.F_ALTA
 				,QUANTITY_RECEIVED
-				,1	AS	L_ES_BORRABLE
+				,L_ES_BORRABLE
 				-- =============================	
 	FROM		DETAILS_BPO_RECIBO --DETAILS_BPO_PEDIDO
 	INNER JOIN	ITEM		ON	DETAILS_BPO_RECIBO.K_ITEM=ITEM.K_ITEM
@@ -605,9 +608,7 @@ CREATE PROCEDURE [dbo].[PG_INUP_DETAILS_BPO_RECIBO]
 	@PP_K_HEADER_PURCHASE_ORDER				INT,
 	@PP_K_ORDEN_COMPRA_PEDIDO				VARCHAR(50),
 	@PP_K_ITEM								INT,
-	--@PP_DETA_ARRAY							NVARCHAR(MAX),
 	@PP_QTTY_ARRAY							NVARCHAR(MAX),
-	--@PP_DATE_ARRAY							NVARCHAR(MAX),
 	@PP_INUP_ARRAY							NVARCHAR(MAX)
 	-----=====================================================
 AS
@@ -615,32 +616,35 @@ AS
 	-----=====================================================				
 BEGIN TRANSACTION 
 BEGIN TRY	
-	--DECLARE @VP_POSICION_DETA	INT
+	DECLARE @VP_ENTREGA_NO		INT		--PARA LA ASIGNACIÓN DEL NÚMERO DE ENTREGA
 	DECLARE @VP_POSICION_QTTY	INT
-	--DECLARE @VP_POSICION_DATE	INT
 	DECLARE @VP_POSICION_INUP	INT
-	--DECLARE @VP_VALOR_DETA		VARCHAR(500)
 	DECLARE @VP_VALOR_QTTY		VARCHAR(500)
-	--DECLARE @VP_VALOR_DATE		VARCHAR(500)
 	DECLARE @VP_VALOR_INUP		VARCHAR(500)
+
+	
+			SET @VP_ENTREGA_NO=		(ISNULL((
+											SELECT	DISTINCT(K_ENTREGA)
+											FROM	DETAILS_BPO_RECIBO
+											WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
+											AND		K_ORDEN_COMPRA_PEDIDO=@PP_K_ORDEN_COMPRA_PEDIDO
+											),0)
+									) + 1
+			--SET @VP_ENTREGA_NO += 1
+			--SELECT	@VP_ENTREGA_NO
+
 	--Colocamos un separador al final de los parametros para que funcione bien nuestro codigo
-	--SET	@PP_DETA_ARRAY	= @PP_DETA_ARRAY	+ '/'
 	SET	@PP_QTTY_ARRAY	= @PP_QTTY_ARRAY	+ '/'
-	--SET	@PP_DATE_ARRAY	= @PP_DATE_ARRAY	+ '/'
 	SET	@PP_INUP_ARRAY	= @PP_INUP_ARRAY	+ '/'
 		
 	--Hacemos un bucle que se repite mientras haya separadores, patindex busca un patron en una cadena y nos devuelve su posicion
 	WHILE patindex('%/%' , @PP_QTTY_ARRAY) <> 0
 		BEGIN
-			--SELECT @VP_POSICION_DETA	=	patindex('%/%' , @PP_DETA_ARRAY	)
 			SELECT @VP_POSICION_QTTY	=	patindex('%/%' , @PP_QTTY_ARRAY )
-			--SELECT @VP_POSICION_DATE	=	patindex('%/%' , @PP_DATE_ARRAY	)
 			SELECT @VP_POSICION_INUP	=	patindex('%/%' , @PP_INUP_ARRAY	)
 
 			--Buscamos la posicion de la primera y obtenemos los caracteres hasta esa posicion
-			--SELECT @VP_VALOR_DETA		= LEFT(@PP_DETA_ARRAY	, @VP_POSICION_DETA - 1)
 			SELECT @VP_VALOR_QTTY		= LEFT(@PP_QTTY_ARRAY	, @VP_POSICION_QTTY	- 1)
-			--SELECT @VP_VALOR_DATE		= LEFT(@PP_DATE_ARRAY	, @VP_POSICION_DATE	- 1)
 			SELECT @VP_VALOR_INUP		= LEFT(@PP_INUP_ARRAY	, @VP_POSICION_INUP	- 1)
 
 			IF @VP_VALOR_INUP=0
@@ -649,7 +653,7 @@ BEGIN TRY
 						(
 						[K_HEADER_PURCHASE_ORDER]		
 						,[K_ORDEN_COMPRA_PEDIDO]			
-						--,[K_DETAILS_BPO_PEDIDO]			
+						,[K_ENTREGA]			
 						-- ============================	
 						,[K_ITEM]												
 						-- ============================
@@ -661,7 +665,7 @@ BEGIN TRY
 						(
 						@PP_K_HEADER_PURCHASE_ORDER
 						,@PP_K_ORDEN_COMPRA_PEDIDO
-						--,@VP_VALOR_DETA	
+						,@VP_ENTREGA_NO
 						-- ============================
 						,@PP_K_ITEM
 						-- ============================
@@ -678,9 +682,7 @@ BEGIN TRY
 						END
 				END			
 			--Reemplazamos lo procesado con nada con la funcion stuff
-			--SELECT @PP_DETA_ARRAY	= STUFF(@PP_DETA_ARRAY	, 1, @VP_POSICION_DETA, '')
 			SELECT @PP_QTTY_ARRAY	= STUFF(@PP_QTTY_ARRAY  , 1, @VP_POSICION_QTTY , '')
-			--SELECT @PP_DATE_ARRAY	= STUFF(@PP_DATE_ARRAY	, 1, @VP_POSICION_DATE , '')
 			SELECT @PP_INUP_ARRAY	= STUFF(@PP_INUP_ARRAY	, 1, @VP_POSICION_INUP , '')
 		END
 

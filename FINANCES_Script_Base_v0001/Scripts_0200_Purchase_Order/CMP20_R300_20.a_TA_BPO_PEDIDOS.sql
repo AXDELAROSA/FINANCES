@@ -139,11 +139,6 @@ CREATE TABLE [dbo].[DETAILS_BPO_PEDIDO] (
 ) ON [PRIMARY]
 GO
 -- //////////////////////////////////////////////////////
---ALTER TABLE [dbo].[DETAILS_PURCHASE_ORDER] ADD 
---	CONSTRAINT [FK_HEADER_PURCHASE_ORDER_01] 
---		FOREIGN KEY ( K_HEADER_PURCHASE_ORDER ) 
---		REFERENCES [dbo].[HEADER_PURCHASE_ORDER] (K_HEADER_PURCHASE_ORDER )
---GO
 ALTER TABLE [dbo].[DETAILS_BPO_PEDIDO] 
 	ADD		[K_USUARIO_ALTA]			[INT] NULL			,
 			[F_ALTA]					[DATETIME] NULL		,
@@ -163,13 +158,15 @@ CREATE TABLE [dbo].[DETAILS_BPO_RECIBO] (
 	[K_HEADER_PURCHASE_ORDER]				[INT] NOT NULL,
 	[K_ORDEN_COMPRA_PEDIDO]					[VARCHAR](50) NOT NULL,
 	-- ============================
---	[K_DETAILS_BPO_PEDIDO]					[INT] NOT NULL,
+	[K_ENTREGA]								[INT] NOT NULL DEFAULT 1,
 	[K_ITEM]								[INT] NOT NULL,
 	-- ============================
---	[QUANTITY_ORDER]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
-	-- ============================
 	[QUANTITY_RECEIVED]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
---	[QUANTITY_PENDING]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
+	-- ============================
+	[LOTE_VENDOR]							[INT] NOT NULL,
+	[LOTE_PEARL]							[INT] NOT NULL,
+	-- ============================
+	[L_ES_BORRABLE]							[INT] NOT NULL DEFAULT 1
 ) ON [PRIMARY]
 GO
 
