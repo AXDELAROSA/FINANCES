@@ -163,8 +163,8 @@ CREATE TABLE [dbo].[DETAILS_BPO_RECIBO] (
 	-- ============================
 	[QUANTITY_RECEIVED]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
 	-- ============================
-	[LOTE_VENDOR]							[INT] NOT NULL,
-	[LOTE_PEARL]							[INT] NOT NULL,
+	[LOTE_VENDOR]							[INT] NOT NULL DEFAULT 0,
+	[LOTE_PEARL]							[INT] NOT NULL DEFAULT 0,
 	-- ============================
 	[L_ES_BORRABLE]							[INT] NOT NULL DEFAULT 1
 ) ON [PRIMARY]
