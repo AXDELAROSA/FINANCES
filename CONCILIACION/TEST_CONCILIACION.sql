@@ -35,29 +35,48 @@ select * from HIDESHDR_SQL
  --AND LTRIM(RTRIM(HIDE))  IN ('0037')
  --AND PCOLOR = 'FWLCPX7'
 
+SELECT	CONVERT(DATE, CDATE) CDATE, 
+						LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) AS PROD_CAT_DESC, 
+						LTRIM(RTRIM(item_desc_1)) AS TYPE, 
+						LTRIM(RTRIM(pf_schst.part_no)) AS PART_NO, 
+						LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO, 
+						SUM(qty) AS QTY, 
+						ISNULL(LTRIM(RTRIM(packing_no)), '') AS PACKING_NO,
+						ISNULL(LTRIM(RTRIM(inv_no)), 'N/F') AS INV_NO
+				FROM pf_schst 
+				INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+				INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+				WHERE TYPE='e' 
+				AND CDATE >= '20200901'
+				AND CDATE <= '20200928'
+				AND	(	packing_no IS NOT NULL
+							OR inv_no IS NOT NULL )
+				AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = 'JEEP JT SUMMIT'
+				GROUP BY	CDATE, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
+							LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),  LTRIM(RTRIM(packing_no)), 
+							LTRIM(RTRIM(inv_no)), LTRIM(RTRIM(item_desc_1))
+				ORDER BY	LTRIM(RTRIM(item_desc_1)), LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
+							CDATE, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no))  ,
+							LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)) ASC
+
  SELECT TOP 10 * 
  FROM pf_schst 
  WHERE TYPE='e' and n_emb='1' and cdate2='20200924'
  
 SELECT TOP 100 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
- SELECT  CDATE, pf_schst.prod_cat, item_desc_1 as [TYPE], pf_schst.part_no, pf_schst.cus_part_no , SUM(qty) 'QTY Kits', packing_no ,inv_no AS INVOICE
- FROM pf_schst 
- INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
- WHERE TYPE='e' and n_emb='1' 
- AND CDATE >= '20200915' AND CDATE<= '20200916'
- GROUP BY  CDATE, item_desc_1, pf_schst.prod_cat, part_no, cus_part_no, packing_no, inv_no
- ORDER BY CDATE, item_desc_1, packing_no ASC
+ select *   FROM pf_schst where packing_no = 'WK0715-9'
 
- select *   FROM pf_schst where inv_no = '551725'
+ SELECT top 1000 * FROM imcatfil_sql where prod_cat = 'WKD'
 
-select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551725'
+select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551591'
 
-SELECT * FROM imcatfil_sql where prod_cat = 'PWL'
 
-select item_no,cus_item_no,item_desc_1,qty_to_ship,unit_price from OELINHST_SQL where inv_no='551725'
+SELECT TOP 100 * FROM OEPRCFIL_SQL 
 
-select top 100 filler_0001,prc_or_disc_1 from OEPRCFIL_SQL
+select item_no,cus_item_no,item_desc_1,qty_to_ship,unit_price from OELINHST_SQL where inv_no='551822'
+
+
 
  SELECT SUBSTRING('PMWCFCLCPRDX9', (LEN(LTRIM(RTRIM('PMWCFCLCPRDX9'))) - 5), 6)
 
