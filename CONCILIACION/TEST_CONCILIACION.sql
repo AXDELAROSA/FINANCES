@@ -6,7 +6,8 @@ SELECT * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
 select * from HIDESHDR_SQL   
  --inner join HIDESLIN_SQL on  HIDESLIN_SQL.FILENO = HIDESHDR_SQL.FILENO
- WHERE TDATE = '20200912' AND TYPE = 'DX9 NAPPA'
+ WHERE INVOICE <> '000000'
+ --TDATE = '20200912' AND TYPE = 'DX9 NAPPA'
 
 
  select /*TDATE, TYPE, COLOR,*/ SUM(CONVERT(DECIMAL(13,4),THIDES)) AS THIDES,
@@ -30,10 +31,22 @@ select * from HIDESHDR_SQL
  --ORDER BY LDATE,TYPE, COLOR
 
  SELECT SUBSTRING('33461',1,(LEN('33461') - 1))
-
+ SELECT CONVERT(VARCHAR(10),'2020-07-07')
+ SELECT SUBSTRING('2020-07-07',9, 2)
 --AND	LTRIM(RTRIM(PLOT)) = '401111' 
  --AND LTRIM(RTRIM(HIDE))  IN ('0037')
  --AND PCOLOR = 'FWLCPX7'
+
+ SELECT	DISTINCT LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
+ FROM pf_schst 
+ INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+ WHERE TYPE='e' 
+ AND CDATE >= '20200701'
+ AND CDATE <= '20200731'
+ AND	(	packing_no IS NOT NULL
+ 			OR inv_no IS NOT NULL )
+ AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = '2015 WK KL'
+ ORDER BY	LTRIM(RTRIM(cus_part_no)) ASC
 
 SELECT	CONVERT(DATE, CDATE) CDATE, 
 						LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) AS PROD_CAT_DESC, 
@@ -47,11 +60,11 @@ SELECT	CONVERT(DATE, CDATE) CDATE,
 				INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
 				INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
 				WHERE TYPE='e' 
-				AND CDATE >= '20200901'
-				AND CDATE <= '20200928'
+				AND CDATE >= '20200701'
+				AND CDATE <= '20200731'
 				AND	(	packing_no IS NOT NULL
 							OR inv_no IS NOT NULL )
-				AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = 'JEEP JT SUMMIT'
+				AND LTRIM(RTRIM(pf_schst.cus_part_no)) = '174255A'
 				GROUP BY	CDATE, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
 							LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),  LTRIM(RTRIM(packing_no)), 
 							LTRIM(RTRIM(inv_no)), LTRIM(RTRIM(item_desc_1))
@@ -61,7 +74,9 @@ SELECT	CONVERT(DATE, CDATE) CDATE,
 
  SELECT TOP 10 * 
  FROM pf_schst 
- WHERE TYPE='e' and n_emb='1' and cdate2='20200924'
+ WHERE /*TYPE='e' AND*/ inv_no = '551798'
+  --and n_emb='1' 
+ --and cdate2='20200924'
  
 SELECT TOP 100 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
@@ -69,7 +84,7 @@ SELECT TOP 100 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
  SELECT top 1000 * FROM imcatfil_sql where prod_cat = 'WKD'
 
-select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551591'
+select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551798'
 
 
 SELECT TOP 100 * FROM OEPRCFIL_SQL 

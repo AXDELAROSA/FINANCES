@@ -98,7 +98,7 @@ AS
 				OPEN CU_ENTRADA_MATERIAL
 				FETCH NEXT FROM CU_ENTRADA_MATERIAL INTO @VP_TDATE, @VP_TYPE, @VP_COLOR, @VP_CLOT, @VP_PLOT, @VP_STATUS, @VP_PCOLOR, @VP_THIDES, @VP_TAREA, @VP_AVGAREA, @VP_INVOICE
 							
-	-- /		///////////////////SE RECORRE EL CURSOR//////////////////////////	
+				-- ////////////////////SE RECORRE EL CURSOR//////////////////////////	
 				WHILE @@FETCH_STATUS = 0
 					BEGIN
 						DECLARE @VP_N_ENTRADA_PIEL_MHI INT = 0
@@ -327,8 +327,7 @@ AS
 			PRICE			VARCHAR(50),
 			QTY				VARCHAR(50),
 			INV_NO			VARCHAR(50),
-			PACKING_NO		VARCHAR(50)
-			
+			PACKING_NO		VARCHAR(50)	
 		)
 
 		DECLARE @VP_N_RESULTADO_BUSQUEDA INT = 0
@@ -595,7 +594,6 @@ AS
 	-- ////////////////////////////////////////////////
 	-- ////////////////////////////////////////////////
 GO
-
 
 
 
