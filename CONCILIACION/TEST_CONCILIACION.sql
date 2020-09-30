@@ -72,28 +72,44 @@ SELECT	CONVERT(DATE, CDATE) CDATE,
 							CDATE, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no))  ,
 							LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)) ASC
 
- SELECT TOP 10 * 
+ SELECT TOP 100 * 
  FROM pf_schst 
- WHERE /*TYPE='e' AND*/ inv_no = '551798'
-  --and n_emb='1' 
- --and cdate2='20200924'
+ WHERE /*TYPE='e' AND*/ inv_no = '551590' AND cus_part_no = '174255A'
+AND CDATE = '20200706'
  
 SELECT TOP 100 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F___DX9'
 
- select *   FROM pf_schst where packing_no = 'WK0715-9'
+ select *   FROM pf_schst where INV_NO IN ('551641','551639')
 
  SELECT top 1000 * FROM imcatfil_sql where prod_cat = 'WKD'
 
 select inv_no,tot_sls_amt from OEHDRHST_SQL where inv_no='551798'
 
-
 SELECT TOP 100 * FROM OEPRCFIL_SQL 
 
-select item_no,cus_item_no,item_desc_1,qty_to_ship,unit_price from OELINHST_SQL where inv_no='551822'
+select SUM(qty_to_ship * unit_price)
+from OELINHST_SQL 
+where inv_no='551835'
+AND item_desc_2 = 'CHRYSLER NAPPA HL1'
 
+select OELINHST_SQL.item_no,cus_item_no,OELINHST_SQL.item_desc_1,qty_to_ship,unit_price from OELINHST_SQL where inv_no='551835'
 
+SELECT	* --DISTINCT LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
+					FROM pf_schst 
+					INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+					INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+					WHERE TYPE='e' 
+					AND CDATE >= '20200701'
+					AND CDATE <= '20200731'
+					AND	(	packing_no IS NOT NULL
+								OR inv_no IS NOT NULL )
+					AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) =  'WK GLDL'  
+					AND LTRIM(RTRIM(pf_schst.cus_part_no)) = '172675P' -- para pruebas
+					ORDER BY	CDATE,
+								LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
+								LTRIM(RTRIM(item_desc_1)),
+								LTRIM(RTRIM(cus_part_no)) ASC
 
- SELECT SUBSTRING('PMWCFCLCPRDX9', (LEN(LTRIM(RTRIM('PMWCFCLCPRDX9'))) - 5), 6)
 
 
 
