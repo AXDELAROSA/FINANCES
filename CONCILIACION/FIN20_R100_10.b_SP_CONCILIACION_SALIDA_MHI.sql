@@ -19,14 +19,14 @@ GO
 -- // STORED PROCEDURE ---> SELECT / LISTADO
 -- //////////////////////////////////////////////////////////////
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 GO
 /* 
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA] 0,0,   '2020/07/01', '2020/07/30', '2015 WK KL'
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA] 0,0,	'2020/07/01', '2020/07/31', 'WK GLDL'  
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,   '2020/09/01', '2020/09/30', '2015 WK KL'
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,	'2020/09/01', '2020/09/30', 'WK GLDL'  
 */
-CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA]
+CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
@@ -82,7 +82,9 @@ AS
 		SELECT	@VP_N_RESULTADO_BUSQUEDA = COUNT(ID)
 		FROM	pf_schst
 		INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-		WHERE	TYPE='e' 
+		AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+		AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+		WHERE	TYPE = 'e' -- ENBARCADO
 		AND		CDATE >= @PP_F_INICIO
 		AND		CDATE <= @PP_F_FIN
 		AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @PP_PROGRAMA
@@ -93,9 +95,6 @@ AS
 				DECLARE @VP_CUS_PART_NO_PRINCIPAL VARCHAR(50) = '', @VP_PROD_CAT_DESC_PRINCIPAL VARCHAR(50) = '', @VP_TYPE_PRINCIPAL VARCHAR(50) = ''
 				DECLARE @VP_CUS_PART_NO	VARCHAR(50) = '', @VP_CDATE	VARCHAR(50) = '', @VP_PROD_CAT_DESC	VARCHAR(50) = '', @VP_TYPE VARCHAR(50) = ''
 				DECLARE  @VP_PART_NO VARCHAR(50) = '', @VP_QTY VARCHAR(50) = '', @VP_PACKING_NO	VARCHAR(50) = '', @VP_INV_NO VARCHAR(50) = ''
-				-- ===========================
-				DECLARE @VP_CDATE_ANTERIOR VARCHAR(50) = '', @VP_PROD_CAT_DESC_ANTERIOR	VARCHAR(50) = '', @VP_TYPE_ANTERIOR	VARCHAR(50) = ''
-				DECLARE @VP_PACKING_NO_ANTERIOR		VARCHAR(50) = '', @VP_INV_NO_ANTERIOR VARCHAR(50) = ''
 				-- ===========================
 				DECLARE	@VP_DIA_1	VARCHAR(50) = '', @VP_DIA_2		VARCHAR(50) = '', @VP_DIA_3		VARCHAR(50) = '', @VP_DIA_4		VARCHAR(50)	= '', @VP_DIA_5		VARCHAR(50) = ''
 				DECLARE @VP_DIA_6	VARCHAR(50) = '', @VP_DIA_7		VARCHAR(50) = '', @VP_DIA_8		VARCHAR(50) = '', @VP_DIA_9		VARCHAR(50)	= '', @VP_DIA_10	VARCHAR(50) = ''
@@ -110,14 +109,16 @@ AS
 				FOR SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), LTRIM(RTRIM(item_desc_1)), LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
 					FROM pf_schst 
 					INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
 					INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
-					WHERE TYPE='e' 
+					AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+					WHERE TYPE = 'e' -- ENBARCADO
 					AND CDATE >= @PP_F_INICIO
 					AND CDATE <= @PP_F_FIN	
 					AND	(	packing_no IS NOT NULL
 								OR inv_no IS NOT NULL )
 					AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @PP_PROGRAMA
-					--AND LTRIM(RTRIM(item_desc_1)) = 'CHRYSLER NAPPA DX9' -- para pruebas
 					ORDER BY	LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
 								LTRIM(RTRIM(item_desc_1)),
 								LTRIM(RTRIM(pf_schst.cus_part_no)) ASC
@@ -140,8 +141,11 @@ AS
 									ISNULL(LTRIM(RTRIM(inv_no)), 'N/F') AS INV_NO
 							FROM pf_schst 
 							INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+							AND SUBSTRING(LTRIM(RTRIM(item_no)), 1,1) = 'F'
 							INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-							WHERE TYPE='e' 
+							AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+							AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+							WHERE TYPE = 'e' -- ENBARCADO
 							AND CDATE >= @PP_F_INICIO
 							AND CDATE <= @PP_F_FIN	
 							AND	(	packing_no IS NOT NULL
@@ -435,7 +439,7 @@ AS
 															BEGIN
 																SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 																FROM OELINHST_SQL 
-																WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+																WHERE inv_no = @VP_INV_NO
 																AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
 															
 																SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
@@ -627,7 +631,7 @@ AS
 															BEGIN
 																SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 																FROM OELINHST_SQL 
-																WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+																WHERE inv_no = @VP_INV_NO
 																AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
 															
 																SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
@@ -714,6 +718,48 @@ AS
 											END
 										ELSE
 											BEGIN
+													-- INSERT ROW PARA SEPARAR UN COLOR DE OTRO
+												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
+																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
+																					 DIA_11, DIA_12, DIA_13, DIA_14, DIA_15, DIA_16, DIA_17, DIA_18, DIA_19, DIA_20,	
+																					 DIA_21, DIA_22, DIA_23, DIA_24, DIA_25, DIA_26, DIA_27, DIA_28	,DIA_29, DIA_30,	
+																					 DIA_31, ACUMULADO, PRECIO	)
+																			VALUES(
+																					'', '', '', '',
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', ''
+																					)	
+						
 												-- INSERT DATE
 												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -817,7 +863,7 @@ AS
 													BEGIN
 														SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 														FROM OELINHST_SQL 
-														WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+														WHERE inv_no = @VP_INV_NO
 														AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
 
 														SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
@@ -1013,7 +1059,7 @@ AS
 											BEGIN
 												SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 												FROM OELINHST_SQL 
-												WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+												WHERE inv_no = @VP_INV_NO
 												AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
 
 												SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
@@ -1103,7 +1149,57 @@ AS
 																			'', ''
 																			)	
 									END
+
+								---- ////////////////////////////////////////////////
 								SET @VP_DIA = ''
+								SET @VP_TOTAL_INV_NO = 0
+								SET @VP_AMOUNT = ''
+
+								---- ////////////////////////////////////////////////
+								DECLARE @VP_TOTAL_KIT INT = 0
+								SELECT	@VP_TOTAL_KIT = SUM(qty)
+								FROM pf_schst
+								INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+								WHERE TYPE = 'e' -- ENBARCADO
+								AND CDATE >= @PP_F_INICIO
+								AND CDATE <= @PP_F_FIN	
+								AND LTRIM(RTRIM(pf_schst.cus_part_no)) = @VP_CUS_PART_NO 
+								AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC
+								AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE
+
+								IF @VP_TOTAL_KIT IS NULL 
+									SET @VP_TOTAL_KIT = 0
+
+								UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+									SET ACUMULADO = @VP_TOTAL_KIT
+								WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
+								AND TYPE = @VP_TYPE
+								AND CUS_PART_NO = @VP_CUS_PART_NO
+
+								---- ////////////////////////////////////////////////
+								DECLARE @VP_PRECIO_CUS_PART_NO DECIMAL(13,2) = 0
+								IF @VP_INV_NO <> 'N/F'
+									BEGIN
+										SELECT @VP_PRECIO_CUS_PART_NO = Unit_price
+										FROM OELINHST_SQL 
+										WHERE inv_no = @VP_INV_NO
+										AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
+										AND LTRIM(RTRIM(CUS_ITEM_NO)) = @VP_CUS_PART_NO
+
+										IF @VP_PRECIO_CUS_PART_NO IS NULL 
+											SET @VP_PRECIO_CUS_PART_NO = 0
+
+										UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+											SET PRECIO = @VP_PRECIO_CUS_PART_NO
+										WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
+										AND TYPE = @VP_TYPE
+										AND CUS_PART_NO = @VP_CUS_PART_NO					
+									END
+														
 								FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
 							END
 					
@@ -1111,6 +1207,58 @@ AS
 						CLOSE CU_SALIDA_MATERIAL_X_DIA
 						DEALLOCATE CU_SALIDA_MATERIAL_X_DIA
 						
+						-- ////////////////////////////////////////////////
+						DECLARE @VP_TOTAL_FACTURA DECIMAL(13,2) = 0
+						SELECT	@VP_TOTAL_FACTURA = SUM(qty_to_ship * unit_price)
+						FROM OELINHST_SQL
+						WHERE INV_NO IN (
+											SELECT DISTINCT INV_NO FROM pf_schst
+											INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+											AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+											INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+											AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+											AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+											WHERE TYPE='e' 
+											AND pf_schst.inv_no IS NOT NULL 
+											AND CDATE >= @PP_F_INICIO
+											AND CDATE <= @PP_F_FIN	
+											AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL --'WK GLDL' --'2015 WK KL' --
+											AND  LTRIM(RTRIM(IMITMIDX_SQL.item_desc_1)) = @VP_TYPE_PRINCIPAL --'CHRYSLER NAPPA HL1' --'CAPRI BLACK DX9' -- 
+										)
+						 AND LTRIM(RTRIM(item_desc_2)) = @VP_TYPE_PRINCIPAL --'CHRYSLER NAPPA HL1'
+
+						IF @VP_TOTAL_FACTURA IS NULL 
+							SET @VP_TOTAL_FACTURA = 0
+
+						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+							SET ACUMULADO = @VP_TOTAL_FACTURA
+						WHERE TYPE = @VP_TYPE_PRINCIPAL
+						AND CUS_PART_NO = 'AMOUNT'
+
+						-- ////////////////////////////////////////////////
+						DECLARE @VP_PACKING_TOTAL INT = 0
+						SELECT	@VP_PACKING_TOTAL = SUM(qty)
+								FROM pf_schst
+								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+								INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+								WHERE TYPE = 'e' 
+								AND CDATE >= @PP_F_INICIO
+								AND CDATE <= @PP_F_FIN
+								AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL	
+								AND  LTRIM(RTRIM(IMITMIDX_SQL.item_desc_1)) = @VP_TYPE_PRINCIPAL --'CHRYSLER NAPPA HL1' --'CAPRI BLACK DX9' -- 
+								
+
+						IF @VP_PACKING_TOTAL IS NULL 
+							SET @VP_PACKING_TOTAL = 0
+
+						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+							SET ACUMULADO = @VP_PACKING_TOTAL
+						WHERE TYPE = @VP_TYPE_PRINCIPAL
+						AND CUS_PART_NO = 'PACKING'
+											
 						FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL				
 					END
 					
@@ -1119,21 +1267,96 @@ AS
 				DEALLOCATE CU_SALIDA_MATERIAL
 			END
 
+
 		-- ////////////////////SE SELECCIONAN LOS VALORES INGRESADOS//////////////////////////	
 		SELECT	*
-		--CDATE,			
-		--		PROD_CAT_DESC,	
-		--		TYPE,			
-		--		PART_NO,		 
-		--		CUS_PART_NO,	
-		--		PRICE,
-		--		QTY,
-		--		INV_NO,				
-		--		PACKING_NO		
 		FROM @VP_SALIDA_PIEL_MHI_TBL AS SALIDA
-		--ORDER BY CUS_PART_NO ASC
+
 	-- ////////////////////////////////////////////////
 	-- ////////////////////////////////////////////////
+GO
+
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> SELECT / 
+-- //////////////////////////////////////////////////////////////
+
+
+--USE [DATA_02]
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_GET_PACKING_NO_EMBARQUE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_GET_PACKING_NO_EMBARQUE]
+GO
+-- EXECUTE   [dbo].[PG_GET_PACKING_NO_EMBARQUE] 0,0, '2015 WK KL' 
+CREATE PROCEDURE [dbo].[PG_GET_PACKING_NO_EMBARQUE]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO_ACCION		INT,
+	-- ===========================
+	@PP_PROGRAMA_DESCRIPCION	VARCHAR(150)
+AS
+	-- ///////////////////////////////////////////
+	DECLARE @VP_PROGRAMA	VARCHAR(150)
+	DECLARE @VP_RESULTADO	VARCHAR(250) = ''
+	
+	SELECT @VP_PROGRAMA = LTRIM(RTRIM(PROD_CAT)) 
+	FROM imcatfil_sql WHERE
+	LTRIM(RTRIM(prod_cat_desc)) = @PP_PROGRAMA_DESCRIPCION
+	
+	IF @VP_PROGRAMA IS NULL
+		SET @VP_PROGRAMA = ''
+	-- =========================================
+
+	IF @VP_PROGRAMA <> ''
+		BEGIN
+			DECLARE @VP_N_PACKING			INT = 0
+			DECLARE @VP_PACKING_NO_ACTUAL	VARCHAR(50) = ''
+			DECLARE @VP_DATE				DATE = GETDATE()
+
+			SELECT @VP_N_PACKING = COUNT(ID)
+			FROM	pf_schst 
+			WHERE	TYPE = 'e' 
+			AND		packing_no IS NOT NULL
+			AND		CONVERT(DATE, CDATE) = @VP_DATE
+
+			IF @VP_N_PACKING IS NULL
+				SET @VP_N_PACKING = 0
+
+			IF @VP_N_PACKING > 0
+				BEGIN
+					SELECT TOP 1 @VP_PACKING_NO_ACTUAL = LTRIM(RTRIM(PACKING_NO))
+					FROM	pf_schst 
+					WHERE	TYPE = 'e' 
+					AND		packing_no IS NOT NULL
+					AND	CONVERT(DATE, CDATE) = @VP_DATE
+					ORDER BY ID DESC
+
+					DECLARE @VP_DELIMITADOR VARCHAR(5) = '-'
+					DECLARE @VP_CONSECUTIVO_ACTUAL VARCHAR(50) = ''
+					DECLARE @VP_POSICION_GUION INT = 0
+					DECLARE @VP_CONSECUTIVO_NUEVO INT = 0
+
+					SET @VP_POSICION_GUION = CHARINDEX(@VP_DELIMITADOR, @VP_PACKING_NO_ACTUAL)
+	
+					SET @VP_CONSECUTIVO_ACTUAL = SUBSTRING(@VP_PACKING_NO_ACTUAL, @VP_POSICION_GUION + 1, 5)
+
+					SET @VP_CONSECUTIVO_NUEVO = CONVERT(INT, @VP_CONSECUTIVO_ACTUAL) + 1
+					
+					SET @VP_RESULTADO = CONCAT(@VP_PROGRAMA, FORMAT(GETDATE(),'MMdd'), '-', @VP_CONSECUTIVO_NUEVO )
+				END
+			ELSE
+				BEGIN
+					SET @VP_RESULTADO = CONCAT(@VP_PROGRAMA, FORMAT(GETDATE(),'MMdd'), '-', '1' )
+				END
+
+		END
+
+	-- ///////////////////////////////////////////
+	SELECT @VP_RESULTADO AS PACKING_NO
+	-- ///////////////////////////////////////////
+
+      
+	-- ////////////////////////////////////////////////////////////////////
 GO
 
 
