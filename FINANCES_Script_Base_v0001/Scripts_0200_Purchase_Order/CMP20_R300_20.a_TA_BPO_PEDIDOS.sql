@@ -107,6 +107,7 @@ CREATE TABLE [dbo].[HEADER_BPO_PEDIDO] (
 	[K_CUSTOMER]							[INT] NOT NULL,
 	[K_STATUS_BPO_PEDIDO]					[INT] NOT NULL DEFAULT 1,
 	-- ============================
+	[L_URGENTE]								[INT] NOT NULL DEFAULT 0,
 	[F_DATE_BPO_PEDIDO]						[DATE] NOT NULL,
 	[C_BPO_PEDIDO]							[VARCHAR](500)
 ) ON [PRIMARY]
@@ -163,8 +164,8 @@ CREATE TABLE [dbo].[DETAILS_BPO_RECIBO] (
 	-- ============================
 	[QUANTITY_RECEIVED]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
 	-- ============================
-	[LOTE_VENDOR]							[INT] NOT NULL DEFAULT 0,
-	[LOTE_PEARL]							[INT] NOT NULL DEFAULT 0,
+	[LOTE_VENDOR]							[INT] NOT NULL,
+	[LOTE_PEARL]							[INT] NOT NULL,
 	-- ============================
 	[L_ES_BORRABLE]							[INT] NOT NULL DEFAULT 1
 ) ON [PRIMARY]

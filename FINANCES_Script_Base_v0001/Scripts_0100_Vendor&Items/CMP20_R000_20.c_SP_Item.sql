@@ -270,7 +270,7 @@ CREATE PROCEDURE [dbo].[PG_IN_ITEM]
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
 	@PP_K_VENDOR					INT,
-	@PP_D_ITEM						VARCHAR(100),
+	@PP_D_ITEM						NVARCHAR(MAX),
 	-- ===========================
 	@PP_PART_NUMBER_ITEM_VENDOR		VARCHAR(250),
 	@PP_PART_NUMBER_ITEM_PEARL		VARCHAR(250),
@@ -434,7 +434,7 @@ CREATE PROCEDURE [dbo].[PG_IN_ITEM_PARA_MASTER]
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
 	@PP_K_VENDOR					INT,
-	@PP_D_ITEM						VARCHAR(100),
+	@PP_D_ITEM						NVARCHAR(MAX),
 	-- ===========================
 	@PP_PART_NUMBER_ITEM_VENDOR		VARCHAR(250),
 	@PP_PART_NUMBER_ITEM_PEARL		VARCHAR(250),
@@ -557,7 +557,7 @@ CREATE PROCEDURE [dbo].[PG_UP_ITEM]
 	-- ===========================
 	@PP_K_VENDOR					INT,
 	@PP_K_ITEM						INT,
-	@PP_D_ITEM						VARCHAR(100),
+	@PP_D_ITEM						NVARCHAR(MAX),
 	-- ===========================
 	@PP_PART_NUMBER_ITEM_VENDOR		VARCHAR(250),
 	@PP_PART_NUMBER_ITEM_PEARL		VARCHAR(250),
@@ -785,7 +785,7 @@ CREATE PROCEDURE [dbo].[PG_UP_ITEM_PARA_MASTER]
 	-- ===========================
 	@PP_K_VENDOR					INT,
 	@PP_K_ITEM						INT,
-	@PP_D_ITEM						VARCHAR(100),
+	@PP_D_ITEM						NVARCHAR(MAX),
 	-- ===========================
 	@PP_PART_NUMBER_ITEM_VENDOR		VARCHAR(250),
 	@PP_PART_NUMBER_ITEM_PEARL		VARCHAR(250),
