@@ -2,7 +2,7 @@
 USE DATA_02
 			
 			
-SELECT * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) LIKE 'F%'
+SELECT * FROM IMITMIDX_SQL WHERE search_desc = 'CHRYSLER NAPPA  TX7' 
 
 SELECT DISTINCT LTRIM(RTRIM(TYPE)) from HIDESHDR_SQL
 
@@ -36,14 +36,14 @@ from pf_sc_view
 where cdate2='" & Format(DateTimePicker1.Value, "yyyyMMdd") & "' 
 and type='e' and n_emb='" & TextBox1.Text & "' group by PROG,COLOR order by PROG,COLOR
 			
- SELECT * --DISTINCT packing_no
+ SELECT DISTINCT packing_no
 			FROM	pf_schst 
 			WHERE	TYPE = 'e' 
 			AND		packing_no IS NOT NULL
 			--AND packing_no LIKE '%1002-1'
 			AND		CONVERT(DATE, CDATE2) = '2020-10-06'
 			--AND PACKING_NO = 'RU1005-15'
-			ORDER BY prod_cat
+			--ORDER BY prod_cat
 			--ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
 
 --SELECT SUBSTRING('JLS1002-3',CHARINDEX('-', 'JLS1002-3') + 1, 10)
@@ -154,15 +154,52 @@ SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), LTRIM(RTRIM(item_desc_
 								LTRIM(RTRIM(item_desc_1)),
 								LTRIM(RTRIM(pf_schst.cus_part_no)) ASC
 
-SELECT (sum(patternsqm)/sum(hidesqm)) * 100 
-						FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno  
-						WHERE ccjobhst_sql.datecompleted between 20201001 AND 20201006 
-						AND cccuthst_sql.colour = CONCAT('F', SUBSTRING('PMWGLBRCNPLT5', LEN('PMWGLBRCNPLT5') -5 ,6 ))
+--===============================================================================
 
-SELECT	 (sum(patternsqm)/sum(hidesqm)) * 100 AS UTIL
-						FROM	cccuthst_sql INNER JOIN ccjobhst_sql ON  LTRIM(RTRIM(cccuthst_sql.jobno)) =  LTRIM(RTRIM(ccjobhst_sql.jobno))
-						WHERE	ccjobhst_sql.datecompleted >= [dbo].[CONVERT_DATE_TO_INT]('2020/10/01','yyyyMMdd') 
-						AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT]('2020/10/06','yyyyMMdd') 
-						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING('PMWGLBRCNPLT5', LEN('PMWGLBRCNPLT5') -5 ,6 ))
+DECLARE @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL TABLE(
+	ID				INT IDENTITY(1,1),
+	JOBNO			VARCHAR(20),
+	LOTE			VARCHAR(50),
+	HIDESQM			DECIMAL(13,4),
+	PATTERNSQM		DECIMAL(13,4),
+	HIDES			INT,
+	COLOR			VARCHAR(50),
+	LOWUTILCD		VARCHAR(10)
+)
+
+INSERT INTO @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+SELECT DISTINCT  cccuthst_sql.jobno, cccuthst_sql.lotno, cccuthst_sql.hidesqm, cccuthst_sql.patternsqm, cccuthst_sql.hides, cccuthst_sql.colour, cccuthst_sql.Lowutilcd
+        FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno
+			WHERE	datecompleted BETWEEN  [dbo].[CONVERT_DATE_TO_INT]('2020/07/01','yyyyMMdd')  AND [dbo].[CONVERT_DATE_TO_INT]('2020/07/31','yyyyMMdd') 
+		--	ccjobhst_sql.datecompleted >= [dbo].[CONVERT_DATE_TO_INT]('2020/09/01','yyyyMMdd') 
+		--AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT]('2020/09/30','yyyyMMdd') 
+AND		LTRIM(RTRIM(cccuthst_sql.colour)) = 'FCPRDX9' --CONCAT('F', SUBSTRING('PMWKLFFCPRDX9', LEN('PMWKLFFCPRDX9') -5 ,6 ))
+AND cccuthst_sql.hidesqm <> 0
+
+DECLARE @VP_N_PIEL INT= 0 
+SELECT @VP_N_PIEL = COUNT(HIDES)
+FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
 
 
+SELECT @VP_N_PIEL
+
+DECLARE @VP_TOTAL_SQM_USADO DECIMAL(13,2) = 0 
+SELECT  @VP_TOTAL_SQM_USADO = @VP_TOTAL_SQM_USADO + ROUND((( patternsqm / hidesqm) * 100) ,0) 
+FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
+
+
+SELECT @VP_TOTAL_SQM_USADO
+--879601
+DECLARE @VP_UTILIZACION DECIMAL(20,2) = @VP_TOTAL_SQM_USADO / @VP_N_PIEL
+SELECT @VP_UTILIZACION
+
+
+
+SELECT DISTINCT  cccuthst_sql.jobno, cccuthst_sql.lotno, cccuthst_sql.hidesqm, cccuthst_sql.patternsqm, cccuthst_sql.hides, cccuthst_sql.colour, cccuthst_sql.Lowutilcd
+						        FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno
+									WHERE	ccjobhst_sql.datecompleted >=[dbo].[CONVERT_DATE_TO_INT]('2020/09/01','yyyyMMdd') 
+								AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT]('2020/09/30','yyyyMMdd') 
+						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING('FCPRDX9', LEN('FCPRDX9') -5 ,6 ))
+						AND cccuthst_sql.hidesqm <> 0

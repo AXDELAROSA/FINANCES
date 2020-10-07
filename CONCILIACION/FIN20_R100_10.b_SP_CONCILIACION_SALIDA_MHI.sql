@@ -23,8 +23,8 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_
 	DROP PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 GO
 /* 
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,   '2020/07/01' , '2020/07/30' , '2015 WK KL' 
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,	 '2020/10/01' , '2020/10/30' , 'WK GLDL' 
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,   '2020/07/01' , '2020/07/31' , '2015 WK KL' 
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,	 '2020/09/01' , '2020/09/30' , 'WK GLDL' 
 */
 CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 	@PP_K_SISTEMA_EXE				INT,
@@ -1318,27 +1318,47 @@ AS
 						WHERE TYPE = @VP_TYPE_PRINCIPAL
 						AND CUS_PART_NO = @VP_CUS_PART_NO_PRINCIPAL
 						SET NOCOUNT ON
-
-						DECLARE @VP_UTILIZACION DECIMAL(13,2) = 0
-						SELECT	@VP_UTILIZACION = (sum(patternsqm)/sum(hidesqm)) * 100 
-						FROM	cccuthst_sql 
-						INNER JOIN ccjobhst_sql ON  LTRIM(RTRIM(cccuthst_sql.jobno)) =  LTRIM(RTRIM(ccjobhst_sql.jobno))
-						WHERE	ccjobhst_sql.datecompleted >= [dbo].[CONVERT_DATE_TO_INT](@PP_F_INICIO,'yyyyMMdd') 
-						AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT](@PP_F_FIN,'yyyyMMdd') 
-						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING(@VP_COLOR, LEN(@VP_COLOR) -5 ,6 ))
+												
+						DECLARE @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL TABLE(
+							ID				INT IDENTITY(1,1),
+							JOBNO			VARCHAR(20),
+							LOTE			VARCHAR(50),
+							HIDESQM			DECIMAL(13,4),
+							PATTERNSQM		DECIMAL(13,4),
+							HIDES			INT,
+							COLOR			VARCHAR(50),
+							LOWUTILCD		VARCHAR(10)
+						)
 						SET NOCOUNT ON
+
+						INSERT INTO @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+						SELECT DISTINCT  cccuthst_sql.jobno, cccuthst_sql.lotno, cccuthst_sql.hidesqm, cccuthst_sql.patternsqm, cccuthst_sql.hides, cccuthst_sql.colour, cccuthst_sql.Lowutilcd
+						        FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno
+									WHERE	ccjobhst_sql.datecompleted >=[dbo].[CONVERT_DATE_TO_INT](@PP_F_INICIO,'yyyyMMdd') 
+								AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT](@PP_F_FIN,'yyyyMMdd') 
+						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING(@VP_COLOR, LEN(@VP_COLOR) -5 ,6 ))
+						AND cccuthst_sql.hidesqm <> 0
+						SET NOCOUNT ON
+
+						DECLARE @VP_N_PIEL INT= 0 
+						SELECT @VP_N_PIEL = COUNT(HIDES)
+						FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+						WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
+
+						DECLARE @VP_TOTAL_SQM_USADO DECIMAL(13,2) = 0
+						SELECT  @VP_TOTAL_SQM_USADO = @VP_TOTAL_SQM_USADO + ROUND(((patternsqm / hidesqm) * 100) ,0) 
+						FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+						WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
+
+						DELETE @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+
+						DECLARE @VP_UTILIZACION DECIMAL(13,2) = @VP_TOTAL_SQM_USADO / @VP_N_PIEL
 
 						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
 							SET YIELD = @VP_UTILIZACION
 						WHERE TYPE = @VP_TYPE_PRINCIPAL
 						AND CUS_PART_NO = 'AMOUNT'
 						SET NOCOUNT ON
-
-						--UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
-						--	SET YIELD = @VP_UTILIZACION
-						--WHERE TYPE = @VP_TYPE_PRINCIPAL
-						--AND PROD_CAT_DESC = @VP_PROD_CAT_DESC_PRINCIPAL
-						--SET NOCOUNT ON
 
 						FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL				
 					END
@@ -1358,120 +1378,6 @@ AS
 GO
 
 
-
--- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE ---> SELECT / 
--- //////////////////////////////////////////////////////////////
-
-
---USE [DATA_02]
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_GET_PACKING_NO_EMBARQUE]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_GET_PACKING_NO_EMBARQUE]
-GO
--- EXECUTE   [dbo].[PG_GET_PACKING_NO_EMBARQUE] 0,0, 'CHRYSLER RU AL' 
-CREATE PROCEDURE [dbo].[PG_GET_PACKING_NO_EMBARQUE]
-	@PP_K_SISTEMA_EXE			INT,
-	@PP_K_USUARIO_ACCION		INT,
-	-- ===========================
-	@PP_PROGRAMA_DESCRIPCION	VARCHAR(150)
-AS
-	-- ///////////////////////////////////////////
-	DECLARE @VP_PROGRAMA	VARCHAR(150)
-	DECLARE @VP_RESULTADO	VARCHAR(250) = ''
-	
-	SELECT @VP_PROGRAMA = LTRIM(RTRIM(filler_0001)) 
-	FROM imcatfil_sql WHERE
-	LTRIM(RTRIM(prod_cat_desc)) = @PP_PROGRAMA_DESCRIPCION
-	
-	IF @VP_PROGRAMA IS NULL
-		SET @VP_PROGRAMA = ''
-	-- =========================================
-
-	IF @VP_PROGRAMA <> ''
-		BEGIN
-			DECLARE @VP_N_PACKING			INT = 0
-			DECLARE @VP_PACKING_NO_ACTUAL	VARCHAR(50) = ''
-			DECLARE @VP_DATE				DATE = GETDATE()
-
-			SELECT @VP_N_PACKING = COUNT(ID)
-			FROM	pf_schst 
-			WHERE	TYPE = 'e' 
-			AND		packing_no IS NOT NULL
-			AND		CONVERT(DATE, CDATE) = @VP_DATE
-
-			IF @VP_N_PACKING IS NULL
-				SET @VP_N_PACKING = 0
-
-			IF @VP_N_PACKING > 0
-				BEGIN
-					SELECT TOP 1 @VP_PACKING_NO_ACTUAL = LTRIM(RTRIM(PACKING_NO))
-					FROM	pf_schst 
-					WHERE	TYPE = 'e' 
-					AND		packing_no IS NOT NULL
-					AND	CONVERT(DATE, CDATE) = @VP_DATE
-					ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
-
-					DECLARE @VP_DELIMITADOR VARCHAR(5) = '-'
-					DECLARE @VP_CONSECUTIVO_ACTUAL VARCHAR(50) = ''
-					DECLARE @VP_POSICION_GUION INT = 0
-					DECLARE @VP_CONSECUTIVO_NUEVO INT = 0
-
-					SET @VP_POSICION_GUION = CHARINDEX(@VP_DELIMITADOR, @VP_PACKING_NO_ACTUAL)
-	
-					SET @VP_CONSECUTIVO_ACTUAL = SUBSTRING(@VP_PACKING_NO_ACTUAL, @VP_POSICION_GUION + 1, 5)
-
-					SET @VP_CONSECUTIVO_NUEVO = CONVERT(INT, @VP_CONSECUTIVO_ACTUAL) + 1
-					
-					SET @VP_RESULTADO = CONCAT(@VP_PROGRAMA, FORMAT(GETDATE(),'MMdd'), '-', @VP_CONSECUTIVO_NUEVO )
-				END
-			ELSE
-				BEGIN
-					SET @VP_RESULTADO = CONCAT(@VP_PROGRAMA, FORMAT(GETDATE(),'MMdd'), '-', '1' )
-				END
-
-		END
-
-	-- ///////////////////////////////////////////
-	SELECT @VP_RESULTADO AS PACKING_NO
-	-- ///////////////////////////////////////////
-
-      
-	-- ////////////////////////////////////////////////////////////////////
-GO
-
-
---USE [DATA_02]
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_QTY_PACKING_X_PART_NO]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_SK_QTY_PACKING_X_PART_NO]
-GO
--- EXECUTE   [dbo].[PG_SK_QTY_PACKING_X_PART_NO] 0,0, '2015 WK KL', 'CPRDX9', '20201003', 1
-CREATE PROCEDURE [dbo].[PG_SK_QTY_PACKING_X_PART_NO]
-	@PP_K_SISTEMA_EXE			INT,
-	@PP_K_USUARIO_ACCION		INT,
-	-- ===========================
-	@PP_PROGRAMA_DESCRIPCION	VARCHAR(150),
-	@PP_COLOR					VARCHAR(50),
-	@PP_DATE					VARCHAR(50),
-	@PP_N_EMBARQUE				INT
-AS
-	-- ///////////////////////////////////////////
-	SELECT	LTRIM(RTRIM(NP_CLIENTE)) AS NP_CLIENTE, 
-			COUNT(N_EMB) AS 'CANTIDAD' 
-	FROM	pf_sc_view 
-	WHERE	LTRIM(RTRIM(PROG)) = @PP_PROGRAMA_DESCRIPCION
-	AND LTRIM(RTRIM(COLOR)) = @PP_COLOR
-	AND LTRIM(RTRIM(TYPE)) = 'e' 
-	AND LTRIM(RTRIM(cdate2)) = @PP_DATE
-	AND n_emb = @PP_N_EMBARQUE
-	GROUP BY NP_CLIENTE
-
-	-- ///////////////////////////////////////////
-
-      
-	-- ////////////////////////////////////////////////////////////////////
-GO
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
