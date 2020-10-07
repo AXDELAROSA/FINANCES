@@ -19,14 +19,14 @@ GO
 -- // STORED PROCEDURE ---> SELECT / LISTADO
 -- //////////////////////////////////////////////////////////////
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 GO
 /* 
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA] 0,0,   '2020/07/01', '2020/07/30', '2015 WK KL'
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA] 0,0,	'2020/07/01', '2020/07/31', 'WK GLDL'  
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,   '2020/07/01' , '2020/07/30' , '2015 WK KL' 
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,	 '2020/10/01' , '2020/10/30' , 'WK GLDL' 
 */
-CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_ULTRA]
+CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
@@ -75,14 +75,20 @@ AS
 			DIA_30			VARCHAR(150) DEFAULT '',
 			DIA_31			VARCHAR(150) DEFAULT '',
 			ACUMULADO		VARCHAR(150) DEFAULT '',
-			PRECIO			VARCHAR(150) DEFAULT ''
+			PRECIO			VARCHAR(150) DEFAULT '',
+			NET_AREA		VARCHAR(150) DEFAULT '',
+			YIELD			VARCHAR(150) DEFAULT ''
 		)
-
+		SET NOCOUNT ON
+		
 		DECLARE @VP_N_RESULTADO_BUSQUEDA INT = 0
 		SELECT	@VP_N_RESULTADO_BUSQUEDA = COUNT(ID)
 		FROM	pf_schst
 		INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-		WHERE	TYPE='e' 
+		AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+		AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+		WHERE	TYPE = 'e' -- ENBARCADO
+		AND		packing_no IS NOT NULL
 		AND		CDATE >= @PP_F_INICIO
 		AND		CDATE <= @PP_F_FIN
 		AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @PP_PROGRAMA
@@ -93,9 +99,6 @@ AS
 				DECLARE @VP_CUS_PART_NO_PRINCIPAL VARCHAR(50) = '', @VP_PROD_CAT_DESC_PRINCIPAL VARCHAR(50) = '', @VP_TYPE_PRINCIPAL VARCHAR(50) = ''
 				DECLARE @VP_CUS_PART_NO	VARCHAR(50) = '', @VP_CDATE	VARCHAR(50) = '', @VP_PROD_CAT_DESC	VARCHAR(50) = '', @VP_TYPE VARCHAR(50) = ''
 				DECLARE  @VP_PART_NO VARCHAR(50) = '', @VP_QTY VARCHAR(50) = '', @VP_PACKING_NO	VARCHAR(50) = '', @VP_INV_NO VARCHAR(50) = ''
-				-- ===========================
-				DECLARE @VP_CDATE_ANTERIOR VARCHAR(50) = '', @VP_PROD_CAT_DESC_ANTERIOR	VARCHAR(50) = '', @VP_TYPE_ANTERIOR	VARCHAR(50) = ''
-				DECLARE @VP_PACKING_NO_ANTERIOR		VARCHAR(50) = '', @VP_INV_NO_ANTERIOR VARCHAR(50) = ''
 				-- ===========================
 				DECLARE	@VP_DIA_1	VARCHAR(50) = '', @VP_DIA_2		VARCHAR(50) = '', @VP_DIA_3		VARCHAR(50) = '', @VP_DIA_4		VARCHAR(50)	= '', @VP_DIA_5		VARCHAR(50) = ''
 				DECLARE @VP_DIA_6	VARCHAR(50) = '', @VP_DIA_7		VARCHAR(50) = '', @VP_DIA_8		VARCHAR(50) = '', @VP_DIA_9		VARCHAR(50)	= '', @VP_DIA_10	VARCHAR(50) = ''
@@ -110,18 +113,20 @@ AS
 				FOR SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), LTRIM(RTRIM(item_desc_1)), LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
 					FROM pf_schst 
 					INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
 					INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
-					WHERE TYPE='e' 
+					AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+					WHERE TYPE = 'e' -- ENBARCADO
 					AND CDATE >= @PP_F_INICIO
 					AND CDATE <= @PP_F_FIN	
 					AND	(	packing_no IS NOT NULL
 								OR inv_no IS NOT NULL )
 					AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @PP_PROGRAMA
-					--AND LTRIM(RTRIM(item_desc_1)) = 'CHRYSLER NAPPA DX9' -- para pruebas
 					ORDER BY	LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
 								LTRIM(RTRIM(item_desc_1)),
 								LTRIM(RTRIM(pf_schst.cus_part_no)) ASC
-
+					SET NOCOUNT ON
 				
 				OPEN CU_SALIDA_MATERIAL
 				FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL		
@@ -140,8 +145,11 @@ AS
 									ISNULL(LTRIM(RTRIM(inv_no)), 'N/F') AS INV_NO
 							FROM pf_schst 
 							INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+							AND SUBSTRING(LTRIM(RTRIM(item_no)), 1,1) = 'F'
 							INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-							WHERE TYPE='e' 
+							AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+							AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+							WHERE TYPE = 'e' -- ENBARCADO
 							AND CDATE >= @PP_F_INICIO
 							AND CDATE <= @PP_F_FIN	
 							AND	(	packing_no IS NOT NULL
@@ -155,7 +163,8 @@ AS
 							ORDER BY	LTRIM(RTRIM(item_desc_1)), LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
 										CDATE, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no))  ,
 										LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)) ASC
-						
+						SET NOCOUNT ON
+
 						OPEN CU_SALIDA_MATERIAL_X_DIA
 						FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
 											
@@ -220,7 +229,7 @@ AS
 								IF @VP_DIA = '08' 
 									SET @VP_DIA_8 = @VP_CDATE
 
-								IF @VP_DIA = '9' 
+								IF @VP_DIA = '09' 
 									SET @VP_DIA_9 = @VP_CDATE
 
 								IF @VP_DIA = '10' 
@@ -294,7 +303,7 @@ AS
 
 								DECLARE @VP_N_SALIDA_PIEL_MHI INT = 0
 								SELECT @VP_N_SALIDA_PIEL_MHI = COUNT(ID)
-								FROM @VP_SALIDA_PIEL_MHI_TBL
+								FROM @VP_SALIDA_PIEL_MHI_TBL 
 
 								IF @VP_N_SALIDA_PIEL_MHI IS NULL 
 									SET @VP_N_SALIDA_PIEL_MHI = 0
@@ -303,7 +312,7 @@ AS
 									BEGIN
 										SET @VP_N_SALIDA_PIEL_MHI = 0
 										SELECT @VP_N_SALIDA_PIEL_MHI = COUNT(ID)
-										FROM @VP_SALIDA_PIEL_MHI_TBL
+										FROM @VP_SALIDA_PIEL_MHI_TBL 
 										WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
 										AND	TYPE = @VP_TYPE
 
@@ -312,7 +321,7 @@ AS
 												SET @VP_N_SALIDA_PIEL_MHI = 0
 
 												SELECT @VP_N_SALIDA_PIEL_MHI = COUNT(ID)
-												FROM @VP_SALIDA_PIEL_MHI_TBL
+												FROM @VP_SALIDA_PIEL_MHI_TBL 
 												WHERE CUS_PART_NO = @VP_CUS_PART_NO
 												AND PROD_CAT_DESC = @VP_PROD_CAT_DESC
 												AND	TYPE = @VP_TYPE
@@ -357,7 +366,7 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' THEN @VP_CDATE  ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'DATE'	
 														AND TYPE = @VP_TYPE				
-																						
+														SET NOCOUNT ON							
 														
 														-- UPDATE PACKING
 														UPDATE	@VP_SALIDA_PIEL_MHI_TBL 	
@@ -394,6 +403,7 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' AND DIA_31 = '' THEN @VP_PACKING_NO WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 LIKE '%' + @VP_PACKING_NO + '%' THEN DIA_31 WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 NOT LIKE '%' + @VP_PACKING_NO + '%' THEN CONCAT(DIA_31,'/', @VP_PACKING_NO) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'PACKING'	
 														AND TYPE = @VP_TYPE
+														SET NOCOUNT ON
 
 														-- UPDATE INVOICE
 														UPDATE	@VP_SALIDA_PIEL_MHI_TBL 	
@@ -430,14 +440,16 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' AND DIA_31 = '' THEN @VP_INV_NO WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 LIKE '%' + @VP_INV_NO + '%' THEN DIA_31 WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 NOT LIKE '%' + @VP_INV_NO + '%' THEN CONCAT(DIA_31,'/', @VP_INV_NO) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'INVOICE'
 														AND TYPE = @VP_TYPE				
+														SET NOCOUNT ON
 
 														IF @VP_INV_NO <> 'N/F'
 															BEGIN
 																SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 																FROM OELINHST_SQL 
-																WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+																WHERE inv_no = @VP_INV_NO
 																AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
-															
+																SET NOCOUNT ON
+
 																SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
 															END																			
 
@@ -476,6 +488,7 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' AND DIA_31 = '' THEN @VP_AMOUNT WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 LIKE '%' + @VP_AMOUNT + '%' THEN DIA_31 WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 NOT LIKE '%' + @VP_AMOUNT + '%' THEN CONCAT(DIA_31,'/', @VP_AMOUNT) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'AMOUNT'	
 														AND TYPE = @VP_TYPE	
+														SET NOCOUNT ON
 
 														-- UPDATE QTY		
 														UPDATE	@VP_SALIDA_PIEL_MHI_TBL 	
@@ -511,6 +524,9 @@ AS
 																DIA_30	= 	( CASE WHEN @VP_DIA = '30' THEN ( CASE WHEN DIA_30 = '' THEN @VP_QTY ELSE CONCAT(DIA_30,'/', @VP_QTY) END) ELSE DIA_30 END ),	
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' THEN ( CASE WHEN DIA_31 = '' THEN @VP_QTY ELSE CONCAT(DIA_31,'/', @VP_QTY) END) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = @VP_CUS_PART_NO	
+														AND TYPE = @VP_TYPE	
+														SET NOCOUNT ON
+
 													END
 												ELSE
 													BEGIN
@@ -549,7 +565,7 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' THEN @VP_CDATE  ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'DATE'	
 														AND TYPE = @VP_TYPE				
-																						
+														SET NOCOUNT ON								
 														
 														-- UPDATE PACKING
 														UPDATE	@VP_SALIDA_PIEL_MHI_TBL 	
@@ -586,6 +602,7 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' AND DIA_31 = '' THEN @VP_PACKING_NO WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 LIKE '%' + @VP_PACKING_NO + '%' THEN DIA_31 WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 NOT LIKE '%' + @VP_PACKING_NO + '%' THEN CONCAT(DIA_31,'/', @VP_PACKING_NO) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'PACKING'	
 														AND TYPE = @VP_TYPE
+														SET NOCOUNT ON
 
 														-- UPDATE INVOICE
 														UPDATE	@VP_SALIDA_PIEL_MHI_TBL 	
@@ -622,14 +639,16 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' AND DIA_31 = '' THEN @VP_INV_NO WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 LIKE '%' + @VP_INV_NO + '%' THEN DIA_31 WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 NOT LIKE '%' + @VP_INV_NO + '%' THEN CONCAT(DIA_31,'/', @VP_INV_NO) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'INVOICE'
 														AND TYPE = @VP_TYPE				
+														SET NOCOUNT ON
 
 														IF @VP_INV_NO <> 'N/F'
 															BEGIN
 																SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 																FROM OELINHST_SQL 
-																WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+																WHERE inv_no = @VP_INV_NO
 																AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
-															
+																SET NOCOUNT ON
+
 																SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
 															END																			
 
@@ -668,7 +687,8 @@ AS
 																DIA_31	= 	( CASE WHEN @VP_DIA = '31' AND DIA_31 = '' THEN @VP_AMOUNT WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 LIKE '%' + @VP_AMOUNT + '%' THEN DIA_31 WHEN @VP_DIA = '31' AND DIA_31 <> '' AND DIA_31 NOT LIKE '%' + @VP_AMOUNT + '%' THEN CONCAT(DIA_31,'/', @VP_AMOUNT) ELSE DIA_31 END )
 														WHERE CUS_PART_NO = 'AMOUNT'	
 														AND TYPE = @VP_TYPE	
-														
+														SET NOCOUNT ON
+
 														-- INSERT QTY
 														INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																			 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -677,15 +697,15 @@ AS
 																			 DIA_31, ACUMULADO, PRECIO	)
 																	VALUES(
 																			@VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO,
-																			( CASE WHEN @VP_DIA = '01'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '02'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '03'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '04'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '05'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '06'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '07'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '08'THEN @VP_QTY ELSE '' END ), 
-																			( CASE WHEN @VP_DIA = '09'THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '01' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '02' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '03' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '04' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '05' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '06' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '07' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '08' THEN @VP_QTY ELSE '' END ), 
+																			( CASE WHEN @VP_DIA = '09' THEN @VP_QTY ELSE '' END ), 
 																			( CASE WHEN @VP_DIA = '10' THEN @VP_QTY ELSE '' END ), 
 																			( CASE WHEN @VP_DIA = '11' THEN @VP_QTY ELSE '' END ), 
 																			( CASE WHEN @VP_DIA = '12' THEN @VP_QTY ELSE '' END ), 
@@ -710,10 +730,54 @@ AS
 																			( CASE WHEN @VP_DIA = '31' THEN @VP_QTY ELSE '' END ), 
 																			'', ''
 																			)	
+														SET NOCOUNT ON
 													END
 											END
 										ELSE
 											BEGIN
+													-- INSERT ROW PARA SEPARAR UN COLOR DE OTRO
+												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
+																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
+																					 DIA_11, DIA_12, DIA_13, DIA_14, DIA_15, DIA_16, DIA_17, DIA_18, DIA_19, DIA_20,	
+																					 DIA_21, DIA_22, DIA_23, DIA_24, DIA_25, DIA_26, DIA_27, DIA_28	,DIA_29, DIA_30,	
+																					 DIA_31, ACUMULADO, PRECIO	)
+																			VALUES(
+																					'', '', '', '',
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', 
+																					'', ''
+																					)	
+												SET NOCOUNT ON
+
 												-- INSERT DATE
 												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -727,7 +791,8 @@ AS
 																					@VP_DIA_21, @VP_DIA_22, @VP_DIA_23, @VP_DIA_24, @VP_DIA_25, @VP_DIA_26, @VP_DIA_27, @VP_DIA_28, @VP_DIA_29, @VP_DIA_30,
 																					@VP_DIA_31, '', ''
 																					)	
-												
+												SET NOCOUNT ON
+
 												-- INSERT PACKING
 												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -769,7 +834,8 @@ AS
 																					( CASE WHEN @VP_DIA_31 <> '' THEN @VP_PACKING_NO ELSE '' END ), 
 																					'', ''
 																					)	
-												
+												SET NOCOUNT ON
+
 												-- INSERT INVOICE
 												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -811,14 +877,15 @@ AS
 																					( CASE WHEN @VP_DIA_31 <> '' THEN @VP_INV_NO ELSE '' END ), 
 																					'', ''
 																					)	
-												
+												SET NOCOUNT ON
 												
 												IF @VP_INV_NO <> 'N/F'
 													BEGIN
 														SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 														FROM OELINHST_SQL 
-														WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+														WHERE inv_no = @VP_INV_NO
 														AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
+														SET NOCOUNT ON
 
 														SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
 													END																			
@@ -864,7 +931,8 @@ AS
 																					( CASE WHEN @VP_DIA_31 <> '' THEN @VP_AMOUNT ELSE '' END ), 
 																					'', ''
 																					)	
-												
+												SET NOCOUNT ON
+
 												-- INSERT QTY
 												INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																					 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -905,7 +973,8 @@ AS
 																					( CASE WHEN @VP_DIA_30 <> '' THEN @VP_QTY ELSE '' END ), 
 																					( CASE WHEN @VP_DIA_31 <> '' THEN @VP_QTY ELSE '' END ), 
 																					'', ''
-																					)	
+																				)	
+												SET NOCOUNT ON
 											END
 									END
 								ELSE
@@ -923,7 +992,8 @@ AS
 																			@VP_DIA_21, @VP_DIA_22, @VP_DIA_23, @VP_DIA_24, @VP_DIA_25, @VP_DIA_26, @VP_DIA_27, @VP_DIA_28, @VP_DIA_29, @VP_DIA_30,
 																			@VP_DIA_31, '', ''
 																			)	
-										
+										SET NOCOUNT ON
+
 										-- INSERT PACKING
 										INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																			 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -965,7 +1035,8 @@ AS
 																			( CASE WHEN @VP_DIA_31 <> '' THEN @VP_PACKING_NO ELSE '' END ), 
 																			'', ''
 																			)	
-										
+										SET NOCOUNT ON
+
 										-- INSERT INVOICE
 										INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																			 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -1007,14 +1078,15 @@ AS
 																			( CASE WHEN @VP_DIA_31 <> '' THEN @VP_INV_NO ELSE '' END ), 
 																			'', ''
 																			)	
-										
+										SET NOCOUNT ON
 										
 										IF @VP_INV_NO <> 'N/F'
 											BEGIN
 												SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
 												FROM OELINHST_SQL 
-												WHERE LTRIM(RTRIM(inv_no)) = @VP_INV_NO
+												WHERE inv_no = @VP_INV_NO
 												AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
+												SET NOCOUNT ON
 
 												SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
 											END																			
@@ -1060,7 +1132,8 @@ AS
 																			( CASE WHEN @VP_DIA_31 <> '' THEN @VP_AMOUNT ELSE '' END ), 
 																			'', ''
 																			)	
-										
+										SET NOCOUNT ON
+
 										-- INSERT QTY
 										INSERT INTO @VP_SALIDA_PIEL_MHI_TBL (PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO,	
 																			 DIA_1, DIA_2, DIA_3, DIA_4, DIA_5, DIA_6, DIA_7, DIA_8, DIA_9, DIA_10,		
@@ -1102,8 +1175,81 @@ AS
 																			( CASE WHEN @VP_DIA_31 <> '' THEN @VP_QTY ELSE '' END ), 
 																			'', ''
 																			)	
+										SET NOCOUNT ON
 									END
+
+								---- ////////////////////////////////////////////////
 								SET @VP_DIA = ''
+								SET @VP_TOTAL_INV_NO = 0
+								SET @VP_AMOUNT = ''
+
+								---- ////////////////////////////////////////////////
+								DECLARE @VP_TOTAL_KIT INT = 0
+								SELECT	@VP_TOTAL_KIT = SUM(qty)
+								FROM pf_schst 
+								INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+								WHERE TYPE = 'e' -- ENBARCADO
+								AND CDATE >= @PP_F_INICIO
+								AND CDATE <= @PP_F_FIN	
+								AND LTRIM(RTRIM(pf_schst.cus_part_no)) = @VP_CUS_PART_NO 
+								AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC
+								AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE
+								SET NOCOUNT ON
+
+								IF @VP_TOTAL_KIT IS NULL 
+									SET @VP_TOTAL_KIT = 0
+
+								UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+									SET ACUMULADO = @VP_TOTAL_KIT
+								WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
+								AND TYPE = @VP_TYPE
+								AND CUS_PART_NO = @VP_CUS_PART_NO
+								SET NOCOUNT ON
+
+								---- ////////////////////////////////////////////////
+								DECLARE @VP_PRECIO_CUS_PART_NO DECIMAL(13,2) = 0
+								IF @VP_INV_NO <> 'N/F'
+									BEGIN
+										SELECT @VP_PRECIO_CUS_PART_NO = Unit_price
+										FROM OELINHST_SQL 
+										WHERE inv_no = @VP_INV_NO
+										AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
+										AND LTRIM(RTRIM(CUS_ITEM_NO)) = @VP_CUS_PART_NO
+										SET NOCOUNT ON
+
+										IF @VP_PRECIO_CUS_PART_NO IS NULL 
+											SET @VP_PRECIO_CUS_PART_NO = 0
+
+										UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+											SET PRECIO = @VP_PRECIO_CUS_PART_NO
+										WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
+										AND TYPE = @VP_TYPE
+										AND CUS_PART_NO = @VP_CUS_PART_NO	
+										SET NOCOUNT ON				
+									END
+
+								---- ////////////////////////////////////////////////
+								DECLARE @VP_AREA_NETO DECIMAL(13,5) = 0
+								
+								SELECT  @VP_AREA_NETO = cube_width 
+								FROM IMITMIDX_SQL 
+								WHERE LTRIM(RTRIM(item_no)) = @VP_PART_NO
+								SET NOCOUNT ON
+
+								IF @VP_AREA_NETO IS NULL 
+									SET @VP_AREA_NETO = 0
+
+								UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+									SET NET_AREA = @VP_AREA_NETO
+								WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
+								AND TYPE = @VP_TYPE
+								AND CUS_PART_NO = @VP_CUS_PART_NO					
+								SET NOCOUNT ON
+												
 								FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
 							END
 					
@@ -1111,6 +1257,89 @@ AS
 						CLOSE CU_SALIDA_MATERIAL_X_DIA
 						DEALLOCATE CU_SALIDA_MATERIAL_X_DIA
 						
+						-- ////////////////////////////////////////////////
+						DECLARE @VP_TOTAL_FACTURA DECIMAL(13,2) = 0
+						SELECT	@VP_TOTAL_FACTURA = SUM(qty_to_ship * unit_price)
+						FROM OELINHST_SQL 
+						WHERE INV_NO IN (
+											SELECT DISTINCT INV_NO FROM pf_schst
+											INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+											AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+											INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+											AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+											AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+											WHERE TYPE='e' 
+											AND pf_schst.inv_no IS NOT NULL 
+											AND CDATE >= @PP_F_INICIO
+											AND CDATE <= @PP_F_FIN	
+											AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL --'WK GLDL' --'2015 WK KL' --
+											AND  LTRIM(RTRIM(IMITMIDX_SQL.item_desc_1)) = @VP_TYPE_PRINCIPAL --'CHRYSLER NAPPA HL1' --'CAPRI BLACK DX9' -- 
+										)
+						 AND LTRIM(RTRIM(item_desc_2)) = @VP_TYPE_PRINCIPAL --'CHRYSLER NAPPA HL1'
+						 SET NOCOUNT ON
+
+						IF @VP_TOTAL_FACTURA IS NULL 
+							SET @VP_TOTAL_FACTURA = 0
+
+						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+							SET ACUMULADO = @VP_TOTAL_FACTURA
+						WHERE TYPE = @VP_TYPE_PRINCIPAL
+						AND CUS_PART_NO = 'AMOUNT'
+						SET NOCOUNT ON
+
+						-- ////////////////////////////////////////////////
+						DECLARE @VP_PACKING_TOTAL INT = 0
+						SELECT	@VP_PACKING_TOTAL = SUM(qty)
+								FROM pf_schst 
+								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+								INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+								WHERE TYPE = 'e' 
+								AND CDATE >= @PP_F_INICIO
+								AND CDATE <= @PP_F_FIN
+								AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL	
+								AND  LTRIM(RTRIM(IMITMIDX_SQL.item_desc_1)) = @VP_TYPE_PRINCIPAL --'CHRYSLER NAPPA HL1' --'CAPRI BLACK DX9' -- 
+						SET NOCOUNT ON
+
+						IF @VP_PACKING_TOTAL IS NULL 
+							SET @VP_PACKING_TOTAL = 0
+
+						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+							SET ACUMULADO = @VP_PACKING_TOTAL
+						WHERE TYPE = @VP_TYPE_PRINCIPAL
+						AND CUS_PART_NO = 'PACKING'
+						SET NOCOUNT ON
+						
+						DECLARE @VP_COLOR VARCHAR(50) = ''
+						SELECT TOP 1 @VP_COLOR = LTRIM(RTRIM(PART_NO)) 
+						FROM @VP_SALIDA_PIEL_MHI_TBL 
+						WHERE TYPE = @VP_TYPE_PRINCIPAL
+						AND CUS_PART_NO = @VP_CUS_PART_NO_PRINCIPAL
+						SET NOCOUNT ON
+
+						DECLARE @VP_UTILIZACION DECIMAL(13,2) = 0
+						SELECT	@VP_UTILIZACION = (sum(patternsqm)/sum(hidesqm)) * 100 
+						FROM	cccuthst_sql 
+						INNER JOIN ccjobhst_sql ON  LTRIM(RTRIM(cccuthst_sql.jobno)) =  LTRIM(RTRIM(ccjobhst_sql.jobno))
+						WHERE	ccjobhst_sql.datecompleted >= [dbo].[CONVERT_DATE_TO_INT](@PP_F_INICIO,'yyyyMMdd') 
+						AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT](@PP_F_FIN,'yyyyMMdd') 
+						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING(@VP_COLOR, LEN(@VP_COLOR) -5 ,6 ))
+						SET NOCOUNT ON
+
+						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+							SET YIELD = @VP_UTILIZACION
+						WHERE TYPE = @VP_TYPE_PRINCIPAL
+						AND CUS_PART_NO = 'AMOUNT'
+						SET NOCOUNT ON
+
+						--UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+						--	SET YIELD = @VP_UTILIZACION
+						--WHERE TYPE = @VP_TYPE_PRINCIPAL
+						--AND PROD_CAT_DESC = @VP_PROD_CAT_DESC_PRINCIPAL
+						--SET NOCOUNT ON
+
 						FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL				
 					END
 					
@@ -1119,23 +1348,130 @@ AS
 				DEALLOCATE CU_SALIDA_MATERIAL
 			END
 
+
 		-- ////////////////////SE SELECCIONAN LOS VALORES INGRESADOS//////////////////////////	
 		SELECT	*
-		--CDATE,			
-		--		PROD_CAT_DESC,	
-		--		TYPE,			
-		--		PART_NO,		 
-		--		CUS_PART_NO,	
-		--		PRICE,
-		--		QTY,
-		--		INV_NO,				
-		--		PACKING_NO		
-		FROM @VP_SALIDA_PIEL_MHI_TBL AS SALIDA
-		--ORDER BY CUS_PART_NO ASC
+		FROM @VP_SALIDA_PIEL_MHI_TBL AS SALIDA 
+
 	-- ////////////////////////////////////////////////
 	-- ////////////////////////////////////////////////
 GO
 
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> SELECT / 
+-- //////////////////////////////////////////////////////////////
+
+
+--USE [DATA_02]
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_GET_PACKING_NO_EMBARQUE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_GET_PACKING_NO_EMBARQUE]
+GO
+-- EXECUTE   [dbo].[PG_GET_PACKING_NO_EMBARQUE] 0,0, 'CHRYSLER RU AL' 
+CREATE PROCEDURE [dbo].[PG_GET_PACKING_NO_EMBARQUE]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO_ACCION		INT,
+	-- ===========================
+	@PP_PROGRAMA_DESCRIPCION	VARCHAR(150)
+AS
+	-- ///////////////////////////////////////////
+	DECLARE @VP_PROGRAMA	VARCHAR(150)
+	DECLARE @VP_RESULTADO	VARCHAR(250) = ''
+	
+	SELECT @VP_PROGRAMA = LTRIM(RTRIM(filler_0001)) 
+	FROM imcatfil_sql WHERE
+	LTRIM(RTRIM(prod_cat_desc)) = @PP_PROGRAMA_DESCRIPCION
+	
+	IF @VP_PROGRAMA IS NULL
+		SET @VP_PROGRAMA = ''
+	-- =========================================
+
+	IF @VP_PROGRAMA <> ''
+		BEGIN
+			DECLARE @VP_N_PACKING			INT = 0
+			DECLARE @VP_PACKING_NO_ACTUAL	VARCHAR(50) = ''
+			DECLARE @VP_DATE				DATE = GETDATE()
+
+			SELECT @VP_N_PACKING = COUNT(ID)
+			FROM	pf_schst 
+			WHERE	TYPE = 'e' 
+			AND		packing_no IS NOT NULL
+			AND		CONVERT(DATE, CDATE) = @VP_DATE
+
+			IF @VP_N_PACKING IS NULL
+				SET @VP_N_PACKING = 0
+
+			IF @VP_N_PACKING > 0
+				BEGIN
+					SELECT TOP 1 @VP_PACKING_NO_ACTUAL = LTRIM(RTRIM(PACKING_NO))
+					FROM	pf_schst 
+					WHERE	TYPE = 'e' 
+					AND		packing_no IS NOT NULL
+					AND	CONVERT(DATE, CDATE) = @VP_DATE
+					ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
+
+					DECLARE @VP_DELIMITADOR VARCHAR(5) = '-'
+					DECLARE @VP_CONSECUTIVO_ACTUAL VARCHAR(50) = ''
+					DECLARE @VP_POSICION_GUION INT = 0
+					DECLARE @VP_CONSECUTIVO_NUEVO INT = 0
+
+					SET @VP_POSICION_GUION = CHARINDEX(@VP_DELIMITADOR, @VP_PACKING_NO_ACTUAL)
+	
+					SET @VP_CONSECUTIVO_ACTUAL = SUBSTRING(@VP_PACKING_NO_ACTUAL, @VP_POSICION_GUION + 1, 5)
+
+					SET @VP_CONSECUTIVO_NUEVO = CONVERT(INT, @VP_CONSECUTIVO_ACTUAL) + 1
+					
+					SET @VP_RESULTADO = CONCAT(@VP_PROGRAMA, FORMAT(GETDATE(),'MMdd'), '-', @VP_CONSECUTIVO_NUEVO )
+				END
+			ELSE
+				BEGIN
+					SET @VP_RESULTADO = CONCAT(@VP_PROGRAMA, FORMAT(GETDATE(),'MMdd'), '-', '1' )
+				END
+
+		END
+
+	-- ///////////////////////////////////////////
+	SELECT @VP_RESULTADO AS PACKING_NO
+	-- ///////////////////////////////////////////
+
+      
+	-- ////////////////////////////////////////////////////////////////////
+GO
+
+
+--USE [DATA_02]
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_QTY_PACKING_X_PART_NO]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_SK_QTY_PACKING_X_PART_NO]
+GO
+-- EXECUTE   [dbo].[PG_SK_QTY_PACKING_X_PART_NO] 0,0, '2015 WK KL', 'CPRDX9', '20201003', 1
+CREATE PROCEDURE [dbo].[PG_SK_QTY_PACKING_X_PART_NO]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO_ACCION		INT,
+	-- ===========================
+	@PP_PROGRAMA_DESCRIPCION	VARCHAR(150),
+	@PP_COLOR					VARCHAR(50),
+	@PP_DATE					VARCHAR(50),
+	@PP_N_EMBARQUE				INT
+AS
+	-- ///////////////////////////////////////////
+	SELECT	LTRIM(RTRIM(NP_CLIENTE)) AS NP_CLIENTE, 
+			COUNT(N_EMB) AS 'CANTIDAD' 
+	FROM	pf_sc_view 
+	WHERE	LTRIM(RTRIM(PROG)) = @PP_PROGRAMA_DESCRIPCION
+	AND LTRIM(RTRIM(COLOR)) = @PP_COLOR
+	AND LTRIM(RTRIM(TYPE)) = 'e' 
+	AND LTRIM(RTRIM(cdate2)) = @PP_DATE
+	AND n_emb = @PP_N_EMBARQUE
+	GROUP BY NP_CLIENTE
+
+	-- ///////////////////////////////////////////
+
+      
+	-- ////////////////////////////////////////////////////////////////////
+GO
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
