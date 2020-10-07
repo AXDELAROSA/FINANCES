@@ -24,7 +24,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_
 GO
 /* 
  EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,   '2020/07/01' , '2020/07/30' , '2015 WK KL' 
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,	 '2020/10/01' , '2020/10/05' , 'WK GLDL' 
+ EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL] 0,0,	 '2020/10/01' , '2020/10/30' , 'WK GLDL' 
 */
 CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL]
 	@PP_K_SISTEMA_EXE				INT,
@@ -80,7 +80,7 @@ AS
 			YIELD			VARCHAR(150) DEFAULT ''
 		)
 		SET NOCOUNT ON
-
+		
 		DECLARE @VP_N_RESULTADO_BUSQUEDA INT = 0
 		SELECT	@VP_N_RESULTADO_BUSQUEDA = COUNT(ID)
 		FROM	pf_schst
@@ -303,7 +303,7 @@ AS
 
 								DECLARE @VP_N_SALIDA_PIEL_MHI INT = 0
 								SELECT @VP_N_SALIDA_PIEL_MHI = COUNT(ID)
-								FROM @VP_SALIDA_PIEL_MHI_TBL
+								FROM @VP_SALIDA_PIEL_MHI_TBL 
 
 								IF @VP_N_SALIDA_PIEL_MHI IS NULL 
 									SET @VP_N_SALIDA_PIEL_MHI = 0
@@ -312,7 +312,7 @@ AS
 									BEGIN
 										SET @VP_N_SALIDA_PIEL_MHI = 0
 										SELECT @VP_N_SALIDA_PIEL_MHI = COUNT(ID)
-										FROM @VP_SALIDA_PIEL_MHI_TBL
+										FROM @VP_SALIDA_PIEL_MHI_TBL 
 										WHERE PROD_CAT_DESC = @VP_PROD_CAT_DESC
 										AND	TYPE = @VP_TYPE
 
@@ -321,7 +321,7 @@ AS
 												SET @VP_N_SALIDA_PIEL_MHI = 0
 
 												SELECT @VP_N_SALIDA_PIEL_MHI = COUNT(ID)
-												FROM @VP_SALIDA_PIEL_MHI_TBL
+												FROM @VP_SALIDA_PIEL_MHI_TBL 
 												WHERE CUS_PART_NO = @VP_CUS_PART_NO
 												AND PROD_CAT_DESC = @VP_PROD_CAT_DESC
 												AND	TYPE = @VP_TYPE
@@ -1186,7 +1186,7 @@ AS
 								---- ////////////////////////////////////////////////
 								DECLARE @VP_TOTAL_KIT INT = 0
 								SELECT	@VP_TOTAL_KIT = SUM(qty)
-								FROM pf_schst
+								FROM pf_schst 
 								INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
 								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
 								AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
@@ -1233,9 +1233,10 @@ AS
 									END
 
 								---- ////////////////////////////////////////////////
-								DECLARE @VP_AREA_NETO DECIMAL(13,2) = 0
+								DECLARE @VP_AREA_NETO DECIMAL(13,5) = 0
 								
-								SELECT  @VP_AREA_NETO = cube_width FROM IMITMIDX_SQL 
+								SELECT  @VP_AREA_NETO = cube_width 
+								FROM IMITMIDX_SQL 
 								WHERE LTRIM(RTRIM(item_no)) = @VP_PART_NO
 								SET NOCOUNT ON
 
@@ -1248,7 +1249,7 @@ AS
 								AND TYPE = @VP_TYPE
 								AND CUS_PART_NO = @VP_CUS_PART_NO					
 								SET NOCOUNT ON
-														
+												
 								FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
 							END
 					
@@ -1259,7 +1260,7 @@ AS
 						-- ////////////////////////////////////////////////
 						DECLARE @VP_TOTAL_FACTURA DECIMAL(13,2) = 0
 						SELECT	@VP_TOTAL_FACTURA = SUM(qty_to_ship * unit_price)
-						FROM OELINHST_SQL
+						FROM OELINHST_SQL 
 						WHERE INV_NO IN (
 											SELECT DISTINCT INV_NO FROM pf_schst
 											INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
@@ -1289,7 +1290,7 @@ AS
 						-- ////////////////////////////////////////////////
 						DECLARE @VP_PACKING_TOTAL INT = 0
 						SELECT	@VP_PACKING_TOTAL = SUM(qty)
-								FROM pf_schst
+								FROM pf_schst 
 								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
 								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
 								INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
@@ -1310,24 +1311,34 @@ AS
 						WHERE TYPE = @VP_TYPE_PRINCIPAL
 						AND CUS_PART_NO = 'PACKING'
 						SET NOCOUNT ON
-
+						
 						DECLARE @VP_COLOR VARCHAR(50) = ''
 						SELECT TOP 1 @VP_COLOR = LTRIM(RTRIM(PART_NO)) 
 						FROM @VP_SALIDA_PIEL_MHI_TBL 
 						WHERE TYPE = @VP_TYPE_PRINCIPAL
 						AND CUS_PART_NO = @VP_CUS_PART_NO_PRINCIPAL
+						SET NOCOUNT ON
 
 						DECLARE @VP_UTILIZACION DECIMAL(13,2) = 0
-						SELECT @VP_UTILIZACION = (sum(patternsqm)/sum(hidesqm)) * 100 
-						FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno  
-						WHERE ccjobhst_sql.datecompleted between 20201001 AND 20201005 
-						AND cccuthst_sql.colour = CONCAT('F', SUBSTRING(@VP_COLOR, LEN(@VP_COLOR) -5 ,6 ))
+						SELECT	@VP_UTILIZACION = (sum(patternsqm)/sum(hidesqm)) * 100 
+						FROM	cccuthst_sql 
+						INNER JOIN ccjobhst_sql ON  LTRIM(RTRIM(cccuthst_sql.jobno)) =  LTRIM(RTRIM(ccjobhst_sql.jobno))
+						WHERE	ccjobhst_sql.datecompleted >= [dbo].[CONVERT_DATE_TO_INT](@PP_F_INICIO,'yyyyMMdd') 
+						AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT](@PP_F_FIN,'yyyyMMdd') 
+						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING(@VP_COLOR, LEN(@VP_COLOR) -5 ,6 ))
+						SET NOCOUNT ON
 
 						UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
-							SET NET_AREA = @VP_UTILIZACION
+							SET YIELD = @VP_UTILIZACION
 						WHERE TYPE = @VP_TYPE_PRINCIPAL
 						AND CUS_PART_NO = 'AMOUNT'
 						SET NOCOUNT ON
+
+						--UPDATE	@VP_SALIDA_PIEL_MHI_TBL 
+						--	SET YIELD = @VP_UTILIZACION
+						--WHERE TYPE = @VP_TYPE_PRINCIPAL
+						--AND PROD_CAT_DESC = @VP_PROD_CAT_DESC_PRINCIPAL
+						--SET NOCOUNT ON
 
 						FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL				
 					END
@@ -1340,7 +1351,7 @@ AS
 
 		-- ////////////////////SE SELECCIONAN LOS VALORES INGRESADOS//////////////////////////	
 		SELECT	*
-		FROM @VP_SALIDA_PIEL_MHI_TBL AS SALIDA
+		FROM @VP_SALIDA_PIEL_MHI_TBL AS SALIDA 
 
 	-- ////////////////////////////////////////////////
 	-- ////////////////////////////////////////////////
@@ -1399,7 +1410,7 @@ AS
 					WHERE	TYPE = 'e' 
 					AND		packing_no IS NOT NULL
 					AND	CONVERT(DATE, CDATE) = @VP_DATE
-					ORDER BY SUBSTRING(LTRIM(RTRIM(packing_no)), 4, 10) DESC
+					ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
 
 					DECLARE @VP_DELIMITADOR VARCHAR(5) = '-'
 					DECLARE @VP_CONSECUTIVO_ACTUAL VARCHAR(50) = ''

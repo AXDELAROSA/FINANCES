@@ -36,19 +36,39 @@ from pf_sc_view
 where cdate2='" & Format(DateTimePicker1.Value, "yyyyMMdd") & "' 
 and type='e' and n_emb='" & TextBox1.Text & "' group by PROG,COLOR order by PROG,COLOR
 			
- SELECT DISTINCT packing_no
+ SELECT * --DISTINCT packing_no
 			FROM	pf_schst 
 			WHERE	TYPE = 'e' 
 			AND		packing_no IS NOT NULL
 			--AND packing_no LIKE '%1002-1'
-			AND		CONVERT(DATE, CDATE2) = '2020-10-03'
-			--ORDER BY packing_no DESC
-			--ORDER BY SUBSTRING(packing_no, 4, 10) DESC
+			AND		CONVERT(DATE, CDATE2) = '2020-10-06'
+			--AND PACKING_NO = 'RU1005-15'
+			ORDER BY prod_cat
+			--ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
 
-SELECT SUBSTRING('JLS1002-3',4, 10)
+--SELECT SUBSTRING('JLS1002-3',CHARINDEX('-', 'JLS1002-3') + 1, 10)
 
- SELECT TOP 100 *	--DISTINCT LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
+ SELECT *-- DISTINCT packing_no
  FROM pf_sc_view 
+ WHERE	TYPE = 'e' 
+			AND		packing_no IS NOT NULL
+			AND PACKING_NO = 'RU1005-15'
+			AND		CONVERT(DATE, CDATE2) = '2020-10-05'
+			--AND PROG = 'CHRYSLER RU AL'
+			--AND COLOR = 'NRUML8'
+			ORDER BY prod_cat
+
+
+/*
+ --UPDATE pf_sc_view 
+ --SET PACKING_NO = 'RU1005-15'
+ -- WHERE	TYPE = 'e' 
+	--		AND		packing_no IS NOT NULL
+	--		AND PACKING_NO = 'RU1005-10'
+	--		AND		CONVERT(DATE, CDATE2) = '2020-10-05'
+	--		AND PROG = 'CHRYSLER RU AL'
+	--		AND COLOR = 'NRUML8'
+*/			
 
  SELECT TOP 100 * 
  FROM pf_schst 
@@ -77,12 +97,6 @@ select * from OEHDRHST_SQL where  inv_no IN (552545,552566)
  SELECT top 1000 * FROM imcatfil_sql --where prod_cat in ('PWZ','PWG')
  WHERE  L_BORRADO = 0 AND FILLER_0001 IS NOT NULL
 
--- UPDATE imcatfil_sql
---	SET filler_0001 = 'YAN'
---WHERE prod_cat IN ('YFG'
---)
-
-
  select *   FROM pf_schst where INV_NO IN (552297) AND packing_no = 'WK0907-2'
  --AND CDATE = '2020-09-06 00:00:00'
  ORDER BY CDATE
@@ -105,6 +119,11 @@ select TOP 10 * from OELINHST_SQL where /*inv_no='551614' and */ cus_item_no = '
 
 SELECT top 10  * /* Item_No, Comp_Item_No, Qty_Per_Par, Mfg_Uom, Loc, Scrap_Qty */ FROM BMPRDSTR_SQL 
 
+SELECT   cube_width 
+								FROM IMITMIDX_SQL 
+								WHERE LTRIM(RTRIM(item_no)) = 'PMWKLBRCPRDX9'
+			
+
 
 SELECT top 10 * FROM IMITMIDX_SQL
 
@@ -114,7 +133,7 @@ SELECT	COUNT(ID)
 		AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
 		AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
 		WHERE	TYPE = 'e' -- ENBARCADO
-		AND		CDATE >=  '2010/07/01'
+		AND		CDATE >=  '2020/07/01'
 		AND		CDATE <= '2020/07/31'
 		AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = '2015 WK KL'
 
@@ -126,7 +145,7 @@ SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), LTRIM(RTRIM(item_desc_
 					INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
 					AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
 					WHERE TYPE = 'e' -- ENBARCADO
-					AND		CDATE >=  '2010/07/01'
+					AND		CDATE >=  '2020/07/01'
 		AND		CDATE <= '2020/07/31'
 					AND	(	packing_no IS NOT NULL
 								OR inv_no IS NOT NULL )
@@ -137,7 +156,13 @@ SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), LTRIM(RTRIM(item_desc_
 
 SELECT (sum(patternsqm)/sum(hidesqm)) * 100 
 						FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno  
-						WHERE ccjobhst_sql.datecompleted between 20201001 AND 20201005 
-						AND cccuthst_sql.colour = CONCAT('F', SUBSTRING('PMWGARMCNPDX9', LEN('PMWGARMCNPDX9') -5 ,6 ))
+						WHERE ccjobhst_sql.datecompleted between 20201001 AND 20201006 
+						AND cccuthst_sql.colour = CONCAT('F', SUBSTRING('PMWGLBRCNPLT5', LEN('PMWGLBRCNPLT5') -5 ,6 ))
+
+SELECT	 (sum(patternsqm)/sum(hidesqm)) * 100 AS UTIL
+						FROM	cccuthst_sql INNER JOIN ccjobhst_sql ON  LTRIM(RTRIM(cccuthst_sql.jobno)) =  LTRIM(RTRIM(ccjobhst_sql.jobno))
+						WHERE	ccjobhst_sql.datecompleted >= [dbo].[CONVERT_DATE_TO_INT]('2020/10/01','yyyyMMdd') 
+						AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT]('2020/10/06','yyyyMMdd') 
+						AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING('PMWGLBRCNPLT5', LEN('PMWGLBRCNPLT5') -5 ,6 ))
 
 
