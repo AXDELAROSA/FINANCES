@@ -36,14 +36,14 @@ from pf_sc_view
 where cdate2='" & Format(DateTimePicker1.Value, "yyyyMMdd") & "' 
 and type='e' and n_emb='" & TextBox1.Text & "' group by PROG,COLOR order by PROG,COLOR
 			
- SELECT DISTINCT packing_no
+SELECT * --DISTINCT packing_no
 			FROM	pf_schst 
 			WHERE	TYPE = 'e' 
 			AND		packing_no IS NOT NULL
 			--AND packing_no LIKE '%1002-1'
-			AND		CONVERT(DATE, CDATE2) = '2020-10-06'
-			--AND PACKING_NO = 'RU1005-15'
-			--ORDER BY prod_cat
+			AND		CONVERT(DATE, CDATE2) = '2020-10-07'
+			AND PACKING_NO = 'RU1007-4'
+			ORDER BY part_no
 			--ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
 
 --SELECT SUBSTRING('JLS1002-3',CHARINDEX('-', 'JLS1002-3') + 1, 10)
@@ -52,11 +52,18 @@ and type='e' and n_emb='" & TextBox1.Text & "' group by PROG,COLOR order by PROG
  FROM pf_sc_view 
  WHERE	TYPE = 'e' 
 			AND		packing_no IS NOT NULL
-			AND PACKING_NO = 'RU1005-15'
-			AND		CONVERT(DATE, CDATE2) = '2020-10-05'
+				AND		CONVERT(DATE, CDATE2) = '2020-10-07'
+			AND PACKING_NO = 'RU1007-4'
 			--AND PROG = 'CHRYSLER RU AL'
 			--AND COLOR = 'NRUML8'
 			ORDER BY prod_cat
+
+--UPDATE pf_sc_view 
+--	SET ORDEN_2 = '16924'
+--WHERE	TYPE = 'e' 
+--AND		packing_no IS NOT NULL
+--AND		CONVERT(DATE, CDATE2) = '2020-10-07'
+--AND PACKING_NO = 'WK1007-11'
 
 
 /*
