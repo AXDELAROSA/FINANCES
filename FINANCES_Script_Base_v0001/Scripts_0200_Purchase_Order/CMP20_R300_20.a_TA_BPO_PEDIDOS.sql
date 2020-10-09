@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200914
 -- ////////////////////////////////////////////////////////////// 
 
--- USE [COMPRAS]
+USE [COMPRAS_Pruebas]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -164,7 +164,8 @@ CREATE TABLE [dbo].[DETAILS_BPO_RECIBO] (
 	-- ============================
 	[QUANTITY_RECEIVED]						[DECIMAL] (10,4) NOT NULL DEFAULT 0,
 	-- ============================
-	[LOTE_VENDOR]							[INT] NOT NULL,
+	[SERIE_NO]								[VARCHAR] (20) NOT NULL,
+	[LOTE_VENDOR]							[VARCHAR] (20) NOT NULL,
 	[LOTE_PEARL]							[INT] NOT NULL,
 	-- ============================
 	[L_ES_BORRABLE]							[INT] NOT NULL DEFAULT 1

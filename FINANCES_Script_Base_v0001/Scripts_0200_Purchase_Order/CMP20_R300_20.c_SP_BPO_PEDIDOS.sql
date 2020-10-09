@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200914
 -- ////////////////////////////////////////////////////////////// 
 
--- USE [COMPRAS]
+ USE [COMPRAS_Pruebas]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -926,7 +926,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD_SERIES]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD_SERIES]
 GO
---		 EXECUTE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD_SERIES] 0,139,19,'00019-00001',35
+--		 EXECUTE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD_SERIES] 0,139,19,'00019-00001',36
 --		 EXECUTE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD_SERIES] 0,139,16,'00016-00001',35	
 CREATE PROCEDURE [dbo].[PG_LI_DETAILS_PEDIDO_CANTIDAD_SERIES]
 	@PP_K_SISTEMA_EXE				INT,
@@ -947,6 +947,7 @@ AS
 				,PART_NUMBER_ITEM_PEARL
 				,D_ITEM
 				-- ===========================	-- ===========================
+				,SERIE_NO
 				,LOTE_VENDOR
 				,LOTE_PEARL
 				,DETAILS_BPO_RECIBO.F_ALTA
@@ -978,6 +979,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_SK_
 GO
 --			   EXECUTE [PG_SK_ITEM_PARA_RECIBOS] 0,139,  '00016-00001',35
 --			   EXECUTE [PG_SK_ITEM_PARA_RECIBOS] 0,139,  '00019-00001',36
+--			   EXECUTE [PG_SK_ITEM_PARA_RECIBOS] 0,139,  '00019-00001',35
 CREATE PROCEDURE [dbo].[PG_SK_ITEM_PARA_RECIBOS]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -1195,23 +1197,26 @@ CREATE PROCEDURE [dbo].[PG_INUP_DETAILS_BPO_RECIBO]
 	@PP_K_ITEM								INT,
 	@PP_QTTY_ARRAY							NVARCHAR(MAX),
 	@PP_INUP_ARRAY							NVARCHAR(MAX),
-	@PP_LOTE_ARRAY							NVARCHAR(MAX)
+	@PP_LOTE_ARRAY							NVARCHAR(MAX),
+	@PP_SERI_ARRAY							NVARCHAR(MAX)
 	-----=====================================================
 AS
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 	-----=====================================================				
 BEGIN TRANSACTION 
 BEGIN TRY	
-	DECLARE @VP_ENTREGA_NO				INT		--PARA LA ASIGNACIÓN DEL NÚMERO DE ENTREGA
-	DECLARE @VP_TOTAL_PENDIENTE			DECIMAL(19,4)
-	DECLARE @VP_K_DETAILS_BPO_RECIBO	INT
+	DECLARE @VP_ENTREGA_NO				INT,		--PARA LA ASIGNACIÓN DEL NÚMERO DE ENTREGA
+			@VP_TOTAL_PENDIENTE			DECIMAL(19,4),
+			@VP_K_DETAILS_BPO_RECIBO	INT,
 	
-	DECLARE @VP_POSICION_QTTY			INT
-	DECLARE @VP_POSICION_INUP			INT
-	DECLARE @VP_POSICION_LOTE			INT
-	DECLARE @VP_VALOR_QTTY				VARCHAR(500)
-	DECLARE @VP_VALOR_INUP				VARCHAR(500)
-	DECLARE @VP_VALOR_LOTE				VARCHAR(500)
+			@VP_POSICION_QTTY			INT,
+			@VP_POSICION_INUP			INT,
+			@VP_POSICION_LOTE			INT,
+			@VP_POSICION_SERI			INT,
+			@VP_VALOR_QTTY				VARCHAR(500),
+			@VP_VALOR_INUP				VARCHAR(500),
+			@VP_VALOR_LOTE				VARCHAR(500),
+			@VP_VALOR_SERI				VARCHAR(500)
 	-----==========================================================================================================
 	--	SE REALIZA UN SELECT PARA OBTENER LOS TOTALES PENDIENTES DE LOS ITEM A RECIBIR: 
 	--	EN CASO DE NO EXISTIR UN VALOR PARA EL SELECT SE ENVIARÁ UNA 'X' QUE MANDARA EL ERROR AL FRONT.
@@ -1271,6 +1276,7 @@ BEGIN TRY
 		SET	@PP_QTTY_ARRAY	= @PP_QTTY_ARRAY	+ '/'
 		SET	@PP_INUP_ARRAY	= @PP_INUP_ARRAY	+ '/'
 		SET	@PP_LOTE_ARRAY	= @PP_LOTE_ARRAY	+ '/'
+		SET	@PP_SERI_ARRAY	= @PP_SERI_ARRAY	+ '/'
 			
 		--Hacemos un bucle que se repite mientras haya separadores, patindex busca un patron en una cadena y nos devuelve su posicion
 		WHILE patindex('%/%' , @PP_QTTY_ARRAY) <> 0
@@ -1278,11 +1284,13 @@ BEGIN TRY
 				SELECT @VP_POSICION_QTTY	=	patindex('%/%' , @PP_QTTY_ARRAY )
 				SELECT @VP_POSICION_INUP	=	patindex('%/%' , @PP_INUP_ARRAY	)
 				SELECT @VP_POSICION_LOTE	=	patindex('%/%' , @PP_LOTE_ARRAY	)
+				SELECT @VP_POSICION_SERI	=	patindex('%/%' , @PP_SERI_ARRAY	)
 
 				--Buscamos la posicion de la primera y obtenemos los caracteres hasta esa posicion
 				SELECT @VP_VALOR_QTTY		= LEFT(@PP_QTTY_ARRAY	, @VP_POSICION_QTTY	- 1)
 				SELECT @VP_VALOR_INUP		= LEFT(@PP_INUP_ARRAY	, @VP_POSICION_INUP	- 1)
 				SELECT @VP_VALOR_LOTE		= LEFT(@PP_LOTE_ARRAY	, @VP_POSICION_LOTE	- 1)
+				SELECT @VP_VALOR_SERI		= LEFT(@PP_SERI_ARRAY	, @VP_POSICION_SERI	- 1)
 
 				-----====================================================
 				--	EL VALOR_INUP, ES UN IDENTIFICADOR QUE SE ENVÍA DEL FRONT PARA CONOCER CUALES ITEM NO DEBEN SER INSERTADOS
@@ -1314,8 +1322,9 @@ BEGIN TRY
 							-- ============================
 							,[QUANTITY_RECEIVED]
 							-- ============================
-							,[LOTE_VENDOR]	
-							,[LOTE_PEARL]	
+							,[SERIE_NO]
+							,[LOTE_VENDOR]
+							,[LOTE_PEARL]
 							-- ============================
 							,[K_USUARIO_ALTA], [F_ALTA], [K_USUARIO_CAMBIO], [F_CAMBIO],
 							[L_BORRADO], [K_USUARIO_BAJA], [F_BAJA]  )
@@ -1329,6 +1338,7 @@ BEGIN TRY
 							-- ============================
 							,@VP_VALOR_QTTY
 							-- ============================
+							,@VP_VALOR_SERI
 							,@VP_VALOR_LOTE
 							,@VP_LOTE_PEARL
 							-- ============================
@@ -1361,12 +1371,13 @@ BEGIN TRY
 														-- ===========================
 														@PP_K_ORDEN_COMPRA_PEDIDO,	@VP_K_DETAILS_BPO_RECIBO,
 														-- ===========================
-														@VP_VALOR_LOTE,					--@PP_LOTE_VENDOR,			
-														@VP_LOTE_PEARL,					--@PP_LOTE_PEARL,					
-														@VP_LOTE_NUMERO_CONSECUTIVO,	--@PP_LOTE_NUMERO_CONSECUTIVO,		
+														@VP_VALOR_SERI,					--@PP_SERIE_NO,
+														@VP_VALOR_LOTE,					--@PP_LOTE_VENDOR,
+														@VP_LOTE_PEARL,					--@PP_LOTE_PEARL,
+														@VP_LOTE_NUMERO_CONSECUTIVO,	--@PP_LOTE_NUMERO_CONSECUTIVO,
 														-- ===========================
 														@PP_F_DATE_INVENTARIO,
-														'',--@PP_C_INVENTARIO,				
+														'',--@PP_C_INVENTARIO,
 														-- ============================
 														@VP_VALOR_QTTY							
 						END
@@ -1384,6 +1395,7 @@ BEGIN TRY
 				SELECT @PP_QTTY_ARRAY	= STUFF(@PP_QTTY_ARRAY  , 1, @VP_POSICION_QTTY , '')
 				SELECT @PP_INUP_ARRAY	= STUFF(@PP_INUP_ARRAY	, 1, @VP_POSICION_INUP , '')
 				SELECT @PP_LOTE_ARRAY	= STUFF(@PP_LOTE_ARRAY	, 1, @VP_POSICION_LOTE , '')
+				SELECT @PP_SERI_ARRAY	= STUFF(@PP_SERI_ARRAY	, 1, @VP_POSICION_SERI , '')
 			END
 
 			IF @VP_MENSAJE=''
