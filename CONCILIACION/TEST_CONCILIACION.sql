@@ -2,7 +2,7 @@
 USE DATA_02
 			
 			
-SELECT * FROM IMITMIDX_SQL WHERE search_desc = 'CHRYSLER NAPPA  TX7' 
+SELECT * FROM IMITMIDX_SQL WHERE ITEM_NO = 'FCNPDX9'
 
 SELECT DISTINCT LTRIM(RTRIM(TYPE)) from HIDESHDR_SQL
 
@@ -13,12 +13,13 @@ SELECT * from HIDESHDR_SQL
 
 select top 100 * from u_part_no 
 
-SELECT NP_CLIENTE, COUNT(N_EMB) AS 'CANTIDAD' from pf_sc_view WHERE PROG = '2015 WK KL' 
- AND COLOR = 'CPRDX9 '
- AND TYPE = 'e' 
-AND cdate2 = '20201003'
+SELECT * --NP_CLIENTE, COUNT(N_EMB) AS 'CANTIDAD' 
+from pf_sc_view
+ WHERE  TYPE = 'e' 
+ AND  LTRIM(RTRIM(COLOR)) = 'CNPLT5'
+AND cdate2 = '20201020'
 AND n_emb = '1'
-GROUP BY NP_CLIENTE
+--GROUP BY NP_CLIENTE
 
  select prog,color,count(*) AS 'COUNT' 
  from pf_sc_view 
@@ -38,13 +39,17 @@ and type='e' and n_emb='" & TextBox1.Text & "' group by PROG,COLOR order by PROG
 			
 SELECT * --DISTINCT packing_no
 			FROM	pf_schst 
-			WHERE	TYPE = 'e' 
-			AND		packing_no IS NOT NULL
-			--AND packing_no LIKE '%1002-1'
-			AND		CONVERT(DATE, CDATE2) = '2020-10-07'
-			AND PACKING_NO = 'RU1007-4'
-			ORDER BY part_no
-			--ORDER BY CONVERT(INT,SUBSTRING(packing_no,CHARINDEX('-', packing_no) + 1, 10)) DESC
+			 WHERE  TYPE = 'e' 
+ AND  LTRIM(RTRIM(COLOR)) = 'CNPLT5'
+AND cdate2 = '20201020'
+AND n_emb = '1'
+
+--DELETE FROM	pf_schst 
+--WHERE	TYPE = 'e' 
+--AND N_EMB = 4
+--AND CUS_PART_NO = '200667BWT5'
+--AND		CDATE2 = 20201010
+--AND ID = 4311985
 
 --SELECT SUBSTRING('JLS1002-3',CHARINDEX('-', 'JLS1002-3') + 1, 10)
 
@@ -52,7 +57,8 @@ SELECT * --DISTINCT packing_no
  FROM pf_sc_view 
  WHERE	TYPE = 'e' 
 			AND		packing_no IS NOT NULL
-				AND		CONVERT(DATE, CDATE2) = '2020-10-07'
+				AND		CONVERT(DATE, CDATE2) = '2020-10-10'
+				AND ORDEN LIKE '%S16519%'
 			AND PACKING_NO = 'RU1007-4'
 			--AND PROG = 'CHRYSLER RU AL'
 			--AND COLOR = 'NRUML8'
@@ -102,7 +108,13 @@ AND item_desc_2 = 'CHRYSLER NAPPA HL1'
 select * from OEHDRHST_SQL where  inv_no IN (552545,552566) 
 
  SELECT top 1000 * FROM imcatfil_sql --where prod_cat in ('PWZ','PWG')
- WHERE  L_BORRADO = 0 AND FILLER_0001 IS NOT NULL
+ WHERE  L_BORRADO = 0 --AND FILLER_0001 IS NOT NULL 
+ --AND PROD_CAT_DESC LIKE '%ARM%'
+ ORDER BY PROD_CAT
+ 
+	SELECT *
+	FROM PROD_RPT_SQL 
+	 ORDER BY PROD_CAT
 
  select *   FROM pf_schst where INV_NO IN (552297) AND packing_no = 'WK0907-2'
  --AND CDATE = '2020-09-06 00:00:00'
