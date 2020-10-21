@@ -16,7 +16,7 @@ select top 100 * from u_part_no
 SELECT * --NP_CLIENTE, COUNT(N_EMB) AS 'CANTIDAD' 
 from pf_sc_view
  WHERE  TYPE = 'e' 
- AND  LTRIM(RTRIM(COLOR)) = 'CNPLT5'
+ AND  LTRIM(RTRIM(COLOR)) = 'CNPDX9'
 AND cdate2 = '20201020'
 AND n_emb = '1'
 --GROUP BY NP_CLIENTE
@@ -38,9 +38,9 @@ where cdate2='" & Format(DateTimePicker1.Value, "yyyyMMdd") & "'
 and type='e' and n_emb='" & TextBox1.Text & "' group by PROG,COLOR order by PROG,COLOR
 			
 SELECT * --DISTINCT packing_no
-			FROM	pf_schst 
+			FROM	pf_sc_view 
 			 WHERE  TYPE = 'e' 
- AND  LTRIM(RTRIM(COLOR)) = 'CNPLT5'
+ AND  LTRIM(RTRIM(COLOR)) = 'CNPJRR'
 AND cdate2 = '20201020'
 AND n_emb = '1'
 
