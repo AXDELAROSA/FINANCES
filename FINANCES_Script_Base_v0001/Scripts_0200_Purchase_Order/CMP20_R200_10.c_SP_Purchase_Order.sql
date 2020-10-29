@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200206
 -- ////////////////////////////////////////////////////////////// 
 
--- USE [COMPRAS]
+ USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -363,7 +363,7 @@ GO
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE ---> SELECT / LISTADO
+-- // STORED PROCEDURE ---> SELECT / LISTADO						--		
 -- //	LISTADO PARA VERIFICAR LAS PO QUE SE DEBEN AUTORIZAR		--		LISTADO PARA FINANZAS
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_APPROVE_FINANCES]') AND type in (N'P', N'PC'))
@@ -431,7 +431,7 @@ AS
 --		INNER JOIN	BD_GENERAL.dbo.USUARIO_PEARL	ON HEADER_PURCHASE_ORDER.K_APPROVED_BY=USUARIO_PEARL.K_EMPLEADO_PEARL
 					-- =============================
 		--WHERE		HEADER_PURCHASE_ORDER.K_APPROVED_BY=@PP_K_USUARIO_ACCION
-		WHERE		@PP_K_USUARIO_ACCION IN (57,139,69,157)		-- (57,139)
+		WHERE		@PP_K_USUARIO_ACCION IN (57,139,69,157,161)		-- (57,139)
 					-- =============================
 		AND			HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER	IN	(4,6,7,9,11,13)		-- (4,6,7,9,11)
 					-- =============================
@@ -483,7 +483,7 @@ AS
 --			INNER JOIN	BD_GENERAL.dbo.USUARIO_PEARL	ON HEADER_PURCHASE_ORDER.K_APPROVED_BY=USUARIO_PEARL.K_EMPLEADO_PEARL
 						-- =============================
 			--WHERE		HEADER_PURCHASE_ORDER.K_APPROVED_BY=@PP_K_USUARIO_ACCION
-			WHERE		@PP_K_USUARIO_ACCION IN (57,139,69,157)		-- (57,139)
+			WHERE		@PP_K_USUARIO_ACCION IN (57,139,69,157,161)		-- (57,139)
 						-- =============================
 			AND			HEADER_PURCHASE_ORDER.K_STATUS_PURCHASE_ORDER	IN	(14,12,16,17)
 						-- =============================
@@ -534,7 +534,7 @@ AS
 --		INNER JOIN	BD_GENERAL.dbo.USUARIO_PEARL	ON HEADER_PURCHASE_ORDER.K_APPROVED_BY=USUARIO_PEARL.K_EMPLEADO_PEARL
 					-- =============================
 		--WHERE		HEADER_PURCHASE_ORDER.K_APPROVED_BY=@PP_K_USUARIO_ACCION
-		WHERE		@PP_K_USUARIO_ACCION IN	(57,139,69,157)	---(57,139)
+		WHERE		@PP_K_USUARIO_ACCION IN	(57,139,69,157,161	)	---(57,139)
 					-- =============================
 					-- =============================
 		AND			( @PP_F_INIT IS NULL		OR	@PP_F_INIT<=F_DATE_PURCHASE_ORDER)
@@ -958,7 +958,7 @@ AS
 			EXECUTE	[dbo].[PG_LI_APPROVE_MANAGER]	@PP_K_SISTEMA_EXE,	@PP_K_USUARIO_ACCION, @PP_L_PO_FINANCES
 		END
 															--	EMPLEADO	USUARIO		NOMBRE
-	ELSE IF @PP_K_USUARIO_ACCION IN (57,139,69,157)			--	7658		57			FABIOLA, 69 MARIA SOSA,		157 BERENICE SOSA
+	ELSE IF @PP_K_USUARIO_ACCION IN (57,139,69,157,161)			--	7658		57			FABIOLA, 69 MARIA SOSA,		157 BERENICE SOSA
 		BEGIN
 			EXECUTE	[dbo].[PG_LI_APPROVE_FINANCES]	@PP_K_SISTEMA_EXE,	@PP_K_USUARIO_ACCION, @PP_K_STATUS,
 													@PP_F_INIT,			@PP_F_FINISH
