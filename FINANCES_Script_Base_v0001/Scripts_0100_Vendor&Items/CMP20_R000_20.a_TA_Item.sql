@@ -476,7 +476,11 @@ GO
 -- ALTER TABLE [dbo].[ITEM]															
 --	ADD	[CANTIDAD_MINIMA]			[INT] NOT NULL	DEFAULT 0,					--	AX:	20201012
 --		[CANTIDAD_MAXIMA]			[INT] NOT NULL	DEFAULT 0					--	AX:	20201012
---	GO																
+--	GO
+
+-- ALTER TABLE [dbo].[ITEM]															
+--	ADD	[K_LOTE]					[INT] NOT NULL	DEFAULT 0,					--	AX:	20201029
+--	GO																			
 
 ALTER TABLE [dbo].[ITEM]
 	ADD CONSTRAINT [PK_ITEM]

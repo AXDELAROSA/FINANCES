@@ -1294,8 +1294,9 @@ AS
 
 					IF	@VP_K_CLASS_ITEM<>2
 					BEGIN
-						SET @VP_MENSAJE='All items must be of type ROW_MATERIAL when creating a Blanket. [ITEM: '+@VP_D_ITEM+']'
-						RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
+						--SET @VP_MENSAJE='All items must be of type ROW_MATERIAL when creating a Blanket. [ITEM: '+@VP_D_ITEM+']'
+						SET @VP_MENSAJE='Todos los ITEMS deben ser de tipo ROW_MATERIAL cuando se crea una PO de tipo Blanket. [ITEM: '+@VP_D_ITEM+']'
+						RAISERROR (@VP_MENSAJE, 16, 1 )
 					END
 				END
 
@@ -1331,8 +1332,8 @@ AS
 													
 			IF @@ROWCOUNT = 0
 				BEGIN
-					--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-					SET @VP_MENSAJE='The DETAIL_PURCHASE_ORDER was not inserted. [DETAIL#'+CONVERT(VARCHAR(10),@VP_VALOR_ITEM)+']'
+					--SET @VP_MENSAJE='The DETAIL_PURCHASE_ORDER was not inserted. [DETAIL#'+CONVERT(VARCHAR(10),@VP_VALOR_ITEM)+']'
+					SET @VP_MENSAJE='El detalle de la Orden de Compra no fue insertado. [DETAIL#'+CONVERT(VARCHAR(10),@VP_VALOR_ITEM)+']'
 					RAISERROR (@VP_MENSAJE, 16, 1 ) --MENSAJE - Severity -State.
 				END	
 

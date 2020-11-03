@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200217
 -- ////////////////////////////////////////////////////////////// 
 
---USE [COMPRAS]
+USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -257,7 +257,7 @@ GO
 
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> INSERT
--- // CUANDO SE ACTUALICE ESTE SP SE DEBE ACTUALIZAR EL QUE REGRESA EL K_ITEM
+-- //	CUANDO SE ACTUALICE ESTE SP SE DEBE ACTUALIZAR EL QUE REGRESA EL K_ITEM
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_ITEM]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_IN_ITEM]
@@ -296,7 +296,8 @@ BEGIN TRY
 	IF @PP_K_CLASS_ITEM=2
 	BEGIN
 		--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-		RAISERROR ('It is not possible to insert ITEMS with class ROW_MATERIAL in this module', 16, 1 )
+		--RAISERROR ('It is not possible to insert ITEMS with class ROW_MATERIAL in this module', 16, 1 )
+		RAISERROR ('No es posible insertar ITEMS de clase ROW_MATERIAL en este modulo.', 16, 1 )
 	END
 	ELSE
 	BEGIN
@@ -375,8 +376,8 @@ BEGIN TRY
 
 				IF @@ROWCOUNT = 0
 					BEGIN
-						--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-						DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not inserted. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+						--DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not inserted. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+						DECLARE @VP_ERROR_2 VARCHAR(250)='El ITEM no fue insertado. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
 						RAISERROR (@VP_ERROR_2, 16, 1 )
 					END		
 			END
@@ -396,7 +397,8 @@ BEGIN TRY
 
 				IF @@ROWCOUNT = 0
 				BEGIN
-					DECLARE @VP_ERROR_3 VARCHAR(250)='Price LOG error. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+					--DECLARE @VP_ERROR_3 VARCHAR(250)='Price LOG error. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+					DECLARE @VP_ERROR_3 VARCHAR(250)='Error del LOG de Precios. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
 					RAISERROR (@VP_ERROR_3, 16, 1 ) --MENSAJE - Severity -State.
 				END			
 			END
@@ -536,6 +538,30 @@ AS
 					RAISERROR (@VP_ERROR_2, 16, 1 )
 				END
 		END
+		ELSE
+		BEGIN
+			RAISERROR (@VP_MENSAJE, 16, 1 )
+		END
+		
+		-- ASIGNAR K_LOTE A LOS ITEM. SE AGREGA CONSECUTIVO SEGÚN SE VAN INSERTANDO.
+		DECLARE @VP_K_LOTE	INT
+		
+		SET @VP_K_LOTE=	(	SELECT	TOP(1)
+								K_LOTE
+								FROM	compras.dbo.item
+								ORDER BY K_LOTE DESC
+						) + 1
+		
+		update	compras.dbo.item
+		set		K_LOTE	= @VP_K_LOTE
+		where	K_ITEM	= @VP_K_ITEM
+		
+		IF @@ROWCOUNT = 0
+		BEGIN
+			SET @VP_MENSAJE ='No se pudó insertar el Lote del ITEM. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+			RAISERROR (@VP_ERROR_2, 16, 1 )
+		END	
+	
 	SET @OU_K_ITEM = @VP_K_ITEM
 	-- //////////////////////////////////////////////////////////////
 GO
