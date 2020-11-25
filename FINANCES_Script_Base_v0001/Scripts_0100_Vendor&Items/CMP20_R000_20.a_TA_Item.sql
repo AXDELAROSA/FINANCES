@@ -479,7 +479,7 @@ GO
 --	GO
 
 -- ALTER TABLE [dbo].[ITEM]															
---	ADD	[K_LOTE]					[INT] NOT NULL	DEFAULT 0,					--	AX:	20201029
+--	ADD	[K_LOTE]					[INT] NOT NULL	DEFAULT 0					--	AX:	20201029
 --	GO																			
 
 ALTER TABLE [dbo].[ITEM]
