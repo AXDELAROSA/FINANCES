@@ -23,8 +23,12 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_
 GO
 
 /* 
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/07/01', '2020/07/31', '2015 WK KL', ''
- EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0,	'2020/07/01', '2020/07/31', 'WK GLDL', '' 
+	EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0,  '2020/07/01' , '2020/07/30' , '2015 WK KL' , 'CHRYSLER NAPPA DX9' 
+
+	EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/08/01', '2020/08/31', 'WK GLDL', 'CHRYSLER NAPPA DX9'
+	EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/08/01', '2020/08/31', 'WK GLDL', 'CHRYSLER NAPPA HL1'
+	EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/08/01', '2020/08/31', 'WK GLDL', 'CHRYSLER NAPPA LT5'
+
 */
 CREATE PROCEDURE [dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR]
 	@PP_K_SISTEMA_EXE				INT,
@@ -50,7 +54,8 @@ AS
 			QTY				VARCHAR(150) DEFAULT '',
 			MOUNT			VARCHAR(150) DEFAULT '',
 			PRECIO			VARCHAR(150) DEFAULT '',
-			ACUMULADO		VARCHAR(150) DEFAULT ''
+			ACUMULADO		VARCHAR(150) DEFAULT '',
+			INVOICE			VARCHAR(150) DEFAULT ''
 		)
 		SET NOCOUNT ON
 
@@ -92,7 +97,7 @@ AS
 		WHILE @@FETCH_STATUS = 0
 			BEGIN
 				DECLARE CU_SALIDA_MATERIAL_X_DIA CURSOR 
-				FOR SELECT	CONVERT(DATE, CDATE) CDATE, 
+				FOR SELECT	CONVERT(DATE, CDATE2) CDATE, 
 							LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) AS PROD_CAT_DESC, 
 							LTRIM(RTRIM(item_desc_1)) AS TYPE, 
 							LTRIM(RTRIM(pf_schst.part_no)) AS PART_NO, 
@@ -116,11 +121,11 @@ AS
 					AND LTRIM(RTRIM(pf_schst.cus_part_no)) = @VP_CUS_PART_NO_PRINCIPAL
 					AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
 					AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL
-					GROUP BY	CDATE, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
+					GROUP BY	CDATE2, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
 								LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),  LTRIM(RTRIM(packing_no)), 
 								LTRIM(RTRIM(inv_no)), LTRIM(RTRIM(item_desc_1))
 					ORDER BY	LTRIM(RTRIM(item_desc_1)), LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
-								CDATE, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no)),
+								CDATE2, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no)),
 								LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)) ASC
 				SET NOCOUNT ON
 
@@ -131,6 +136,8 @@ AS
 				WHILE @@FETCH_STATUS = 0
 					BEGIN
 						-- ///////////SE INICIALIZAN LAS VARIABLES/////////////////////////////////////
+						DECLARE @VP_PACKING_ORIGINAL VARCHAR(150) = @VP_PACKING_NO
+
 						SET @VP_TOTAL_INV_NO = 0
 						SET @VP_AMOUNT = ''
 
@@ -148,6 +155,18 @@ AS
 								SET NOCOUNT ON
 
 								SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
+
+								SELECT	TOP 1 @VP_PACKING_ORIGINAL = ISNULL(packing_no, '')
+								FROM pf_schst 
+								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+								WHERE TYPE = 'e' -- ENBARCADO
+								AND CDATE >= @PP_F_INICIO
+								AND CDATE <= @PP_F_FIN	
+								AND	(	packing_no IS NOT NULL
+											OR inv_no IS NOT NULL )
+								AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
+								AND inv_no = @VP_INV_NO
 							END								
 
 						-- /////////SE OBTIENE EL PRECIO DEL NUMERO DE PARTE///////////////////////////////////////
@@ -163,6 +182,7 @@ AS
 
 								IF @VP_PRECIO_CUS_PART_NO IS NULL 
 									SET @VP_PRECIO_CUS_PART_NO = 0
+
 							END
 						ELSE
 							BEGIN
@@ -184,11 +204,11 @@ AS
 						ELSE
 						INSERT INTO	#SALIDA_MATERIAL_MHI(
 															PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO, NET_AREA,
-															DIA, PACKING, QTY, MOUNT, PRECIO
+															DIA, PACKING, QTY, MOUNT, PRECIO, INVOICE
 														)
 												VALUES(
 															@VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_NET_AREA,
-															@VP_CDATE, @VP_PACKING_NO, @VP_QTY, @VP_AMOUNT, @VP_PRECIO_CUS_PART_NO
+															@VP_CDATE, @VP_PACKING_NO, @VP_QTY, @VP_AMOUNT, @VP_PRECIO_CUS_PART_NO, @VP_PACKING_ORIGINAL
 														)
 			
 						FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
@@ -243,10 +263,13 @@ AS
 										FOR XML PATH(''), TYPE ).value('.', 'NVARCHAR(MAX)') ,1,1,'' ) 									 										 			
 											 			
 				SET @query1 = N'SELECT  ''''  PROD_CAT_DESC,  ''''  TYPE, ''DATE''  PART_NO, '''' NET_AREA, '''' YIELD, ''''  CUS_PART_NO, '''' PRECIO, '''' ACUMULADO, ' + @cols1 + N' into [tempdb].[dbo].[FECHA]  from ( SELECT  DIA, PACKING from #SALIDA_MATERIAL_MHI group by  DIA, PACKING ) x pivot ( MAX(DIA) for PACKING in (' + @cols1 + N') ) p ' 
-				EXEC sp_executesql @query1;					 			
+				EXEC sp_executesql @query1;			
+				
+				SET @query2 = N'SELECT   ''''  PROD_CAT_DESC,  ''''  TYPE, ''PACKING''  PART_NO, '''' NET_AREA, '''' YIELD, ''''  CUS_PART_NO, '''' PRECIO, '''' ACUMULADO, ' + @cols1 + N' into [tempdb].[dbo].[PACKING]  from ( SELECT  INVOICE, PACKING from #SALIDA_MATERIAL_MHI group by  DIA, PACKING, INVOICE) x pivot ( MAX(INVOICE) for PACKING in (' + @cols1 + N') ) p ' 
+				EXEC sp_executesql @query2;		 			
 											 			
-				--SET @query2 = N'SELECT  ''''  PROD_CAT_DESC,  ''''  TYPE, ''PACKING/INVOICE''  PART_NO, ''''  CUS_PART_NO, '''' PRECIO, '''' NET_AREA, '''' YIELD, '''' ACUMULADO, ' + @cols1 + N' into [tempdb].[dbo].[INVOICE]  from ( SELECT  PACKING AS PACKNO, PACKING from #SALIDA_MATERIAL_MHI group by  DIA, PACKING ) x pivot ( MAX(PACKNO) for PACKING in (' + @cols1 + N') ) p ' 
-				--EXEC sp_executesql @query2;
+				SET @query2 = N'SELECT   ''''  PROD_CAT_DESC,  ''''  TYPE, ''INVOICE''  PART_NO, '''' NET_AREA, '''' YIELD, ''''  CUS_PART_NO, '''' PRECIO, '''' ACUMULADO, ' + @cols1 + N' into [tempdb].[dbo].[INVOICE]  from ( SELECT  PACKING AS PACKING_NO, PACKING from #SALIDA_MATERIAL_MHI group by  DIA, PACKING) x pivot ( MAX(PACKING_NO) for PACKING in (' + @cols1 + N') ) p ' 
+				EXEC sp_executesql @query2;
 								 										 								 			
 				SET @query3 = N'SELECT  ''''  PROD_CAT_DESC,  ''''  TYPE, ''AMOUNT''  PART_NO, '''' NET_AREA, '''' YIELD,  ''''  CUS_PART_NO, '''' PRECIO, '''' ACUMULADO, ' + @cols1 + N' into [tempdb].[dbo].[AMOUNT]  from ( SELECT  MOUNT, PACKING from #SALIDA_MATERIAL_MHI group by  DIA, PACKING, MOUNT ) x pivot ( MAX(MOUNT) for PACKING in (' + @cols1 + N') ) p ' 
 				EXEC sp_executesql @query3;
@@ -268,9 +291,14 @@ AS
 				SET NOCOUNT ON
 
 				-- ///////SE COPIAN LOS DATOS DE TABLA TEMPORAL [INVOICE] A [TOTALES]/////////////////////////////////////////
-				--INSERT INTO [tempdb].[dbo].[TOTALES]
-				--SELECT * FROM [tempdb].[dbo].[INVOICE] 
-				--SET NOCOUNT ON
+				INSERT INTO [tempdb].[dbo].[TOTALES]
+				SELECT * FROM [tempdb].[dbo].[PACKING] 
+				SET NOCOUNT ON
+
+				-- ///////SE COPIAN LOS DATOS DE TABLA TEMPORAL [INVOICE] A [TOTALES]/////////////////////////////////////////
+				INSERT INTO [tempdb].[dbo].[TOTALES]
+				SELECT * FROM [tempdb].[dbo].[INVOICE] 
+				SET NOCOUNT ON
 
 				-- ///////SE COPIAN LOS DATOS DE TABLA TEMPORAL [AMOUNT] A [TOTALES]/////////////////////////////////////////
 				INSERT INTO [tempdb].[dbo].[TOTALES]
@@ -393,7 +421,7 @@ AS
 				
 				UPDATE [tempdb].[dbo].[TOTALES] 
 					SET ACUMULADO = CONVERT(VARCHAR(15), @VP_TOTAL_PACKING)
-				WHERE PART_NO = 'DATE'
+				WHERE PART_NO = 'PACKING'
 				SET NOCOUNT ON
 
 				-- ////////SE SELECCIONANA EL CONTENIDO DE LA TABLA TEMPORAL TOTALES////////////////////////////////////////
@@ -403,8 +431,11 @@ AS
 				DROP TABLE [tempdb].[dbo].[FECHA]
 				SET NOCOUNT ON
 
-				--DROP TABLE [tempdb].[dbo].[INVOICE]
-				--SET NOCOUNT ON
+				DROP TABLE [tempdb].[dbo].[PACKING]
+				SET NOCOUNT ON
+
+				DROP TABLE [tempdb].[dbo].[INVOICE]
+				SET NOCOUNT ON
 
 				DROP TABLE [tempdb].[dbo].[AMOUNT]
 				SET NOCOUNT ON
@@ -418,19 +449,19 @@ AS
 				DROP TABLE #SALIDA_MATERIAL_MHI
 				SET NOCOUNT ON
 			END
-		ELSE
-			BEGIN
-				SELECT ''
-			END
+		--ELSE
+		--	BEGIN
+		--		SELECT ''
+		--	END
 	-- ////////////////////////////////////////////////
 
 	 /*
 	 USE DATA_02PRUEBAS
 	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/11/01', '2020/11/30', '2015 WK KL', 'CAPRI BLACK DX9'
 
-	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/11/01', '2020/11/30', 'WK GLDL', 'CHRYSLER NAPPA DX9'
-	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/08/01', '2020/08/30', 'WK GLDL', 'CHRYSLER NAPPA HL1'
-	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/07/01', '2020/07/30', 'WK GLDL', 'CHRYSLER NAPPA LT5'
+	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/08/01', '2020/08/30', 'WK GLDL', 'CHRYSLER NAPPA DX9'
+	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/11/01', '2020/11/30', 'WK GLDL', 'CHRYSLER NAPPA HL1'
+	 EXEC	[dbo].[PG_PR_CONCILIACION_SALIDA_MATERIAL_X_COLOR] 0,0, '2020/11/01', '2020/11/30', 'WK GLDL', 'CHRYSLER NAPPA LT5'
 				
 	*/
 	-- ////////////////////////////////////////////////

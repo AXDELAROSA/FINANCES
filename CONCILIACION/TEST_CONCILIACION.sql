@@ -16,25 +16,22 @@ SELECT * --NP_CLIENTE, COUNT(N_EMB) AS 'CANTIDAD'
 from pf_sc_view
  WHERE  TYPE = 'e' 
  --AND  LTRIM(RTRIM(COLOR)) = 'NRUDX9'
-AND cdate2 = '20200701'
-AND PACKING_NO = 'RU1027-3'
+--AND cdate2 = '20200701'
+AND PACKING_NO = 'RU1201-1'
 --AND n_emb = '3'
 --GROUP BY NP_CLIENTE
 
- select  *   FROM pf_schst 
+ select  *  FROM pf_schst 
  WHERE  TYPE = 'e' 
- --AND  LTRIM(RTRIM(COLOR)) = 'MCKPD2'
---AND cdate2 = '20200727'
-AND INV_NO = '553230'
-AND CUS_PART_NO = '201025A'
+AND PACKING_NO = 'RU1201-1'
+ --AND PROD_CAT= 'PWG'
+AND INV_NO IN ('551761',	'551770')
+--AND CUS_PART_NO = '201025A'
 --AND cus_part_no IN ('174954E', '174927D')
-AND CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6)) = 'FCNPDX9'
+--AND CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6)) = 'FCNPDX9'
+ORDER BY cus_part_no
 
---UPDATE  pf_schst 
---	SET PACKING_NO = 'WK1104-8'
--- WHERE  ID = 4349392
-
-SELECT TOP 1000 * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) = 'FCNPDX9'
+SELECT TOP 1000 * FROM IMITMIDX_SQL WHERE prod_cat = 'PWG' LTRIM(RTRIM(item_no)) = 'FCNPDX9'
 
 SELECT * FROM COLORES_ACTIVOS
 
@@ -58,8 +55,8 @@ select * from OEHDRHST_SQL where  inv_no IN (552545,552566)
  
 SELECT * FROM PROD_RPT_SQL ORDER BY PROD_CAT
 
- Select * from OEHDRHST_SQL where  inv_no IN (553399) 
- select * from OELINHST_SQL where inv_no='553533' --and cus_item_no = '172675P'
+ Select * from OEHDRHST_SQL where  inv_no IN (553699) 
+ select * from OELINHST_SQL where inv_no='553699' --and cus_item_no = '172675P'
 
 SELECT  * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) = 'PMWGLBRCNPDX9'
 
@@ -69,23 +66,24 @@ SELECT top 10  * /* Item_No, Comp_Item_No, Qty_Per_Par, Mfg_Uom, Loc, Scrap_Qty 
 
 SELECT   cube_width FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) = 'PMWKLBRCPRDX9'			
 
-SELECT	DISTINCT /*LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),*/ LTRIM(RTRIM(item_desc_1)) --, LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
+
+ SELECT top 1000 * FROM imcatfil_sql  where prod_cat_desc = 'WK GLDL' --'2015 WK KL'
+ and   L_BORRADO = 0 
+ ORDER BY PROD_CAT
+
+SELECT	--DISTINCT  /*LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),*/ LTRIM(RTRIM(item_desc_1)) --, LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
+			TOP 1 packing_no
 					FROM pf_schst 
-					INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
-					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
 					INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
 					AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
 					WHERE TYPE = 'e' -- ENBARCADO
 					AND		CDATE >=  '2020/08/01'
-					AND		CDATE <= '2020/08/31'
+					AND		CDATE <= '2020/08/30'
 					AND	(	packing_no IS NOT NULL
 								OR inv_no IS NOT NULL )
-					AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = '2015 WK KL'
-					--AND LTRIM(RTRIM(item_desc_1)) = 'CHRYSLER NAPPA DX9'
-					--ORDER BY	LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
-					--			LTRIM(RTRIM(item_desc_1)),
-					--			LTRIM(RTRIM(pf_schst.cus_part_no)) ASC
+					--and pf_schst.prod_cat = 'PWG'
+					AND LTRIM(RTRIM(item_desc_1)) = 'CHRYSLER NAPPA DX9'
+					AND inv_no = '551860'
 
  SELECT	CONVERT(DATE, CDATE) CDATE, 
 									LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) AS PROD_CAT_DESC, 
@@ -105,8 +103,8 @@ SELECT	DISTINCT /*LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),*/ LTRIM(RTRIM(item_d
 							AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
 							--LEFT JOIN  ON OEHDRHST_SQL.INV_NO = pf_schst.INV_NO
 							WHERE TYPE = 'e' -- ENBARCADO
-							AND		CDATE >=  '2020/07/01'
-							AND		CDATE <= '2020/07/31'
+							AND		CDATE >=  '2020/11/01'
+							AND		CDATE <= '2020/11/30'
 							AND	(	pf_schst.packing_no IS NOT NULL
 										OR pf_schst.inv_no IS NOT NULL )
 							--AND LTRIM(RTRIM(pf_schst.cus_part_no)) = '174255A'
