@@ -128,7 +128,7 @@ AS
 	IF @VP_RESULTADO=''
 	-- SÓLO EN ESTOS ESTADOS SE PUEDE MODIFICAR UNA ORDEN DE COMRPA, ESTATUS DE RECHAZO Y DE CREADA.
 		IF @VP_STATUS_PO NOT IN (1, 3, 5, 8,13)
-			SET @VP_RESULTADO =  'NOT IS POSSIBLE MODIFY [PO], PLEASE CHECK.' 
+			SET @VP_RESULTADO =  'No es posible modificar la [PO], Verifique...' 
 	--IF @VP_RESULTADO=''
 	--	IF @VP_N_FACTURA_X_PURCHASE_ORDER>0
 	--		SET @VP_RESULTADO =  'There are [INVOICE] assigned.' 		
@@ -166,11 +166,11 @@ AS
 	-- ===========================
 	IF @VP_RESULTADO=''
 		IF ( @VP_K_HEADER_PURCHASE_ORDER IS NULL )
-			SET @VP_RESULTADO =  'The [PURCHASE_ORDER] does not exist.' 	
+			SET @VP_RESULTADO =  'La [Orden de Compra] no existe.'
 	-- ===========================
 	IF @VP_RESULTADO=''
 		IF @VP_L_BORRADO=1
-			SET @VP_RESULTADO =  'The [PURCHASE_ORDER] was down.' 					
+			SET @VP_RESULTADO =  'La [Orden de Compra] fue dada de baja.'
 	-- /////////////////////////////////////////////////////	
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
 	-- /////////////////////////////////////////////////////
@@ -199,7 +199,7 @@ AS
 									WHERE	K_PO_TEMPORAL=@PP_K_PO_TEMPORAL
 	-- ===========================
 		IF  @VP_K_HEADER_PURCHASE_ORDER <> 0
-			SET @VP_RESULTADO =  'The [PO_TEMP] exist.' 	
+			SET @VP_RESULTADO =  'El [ID_PO_TEMP] ya existe agregado.'
 	-- ===========================
 	-- /////////////////////////////////////////////////////	
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO

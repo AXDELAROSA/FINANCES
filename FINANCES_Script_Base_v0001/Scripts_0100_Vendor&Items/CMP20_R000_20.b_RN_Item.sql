@@ -46,11 +46,11 @@ AS
 		IF @VP_N_ITEM_X_D_ITEM>0
 		BEGIN
 			DECLARE @PP_D_VENDOR VARCHAR(250)
-				SELECT	@PP_D_VENDOR=ISNULL(D_VENDOR,'NOT AVAILABLE')
+				SELECT	@PP_D_VENDOR=ISNULL(D_VENDOR,'NO DISPONIBLE')
 				FROM	VENDOR 
-				WHERE K_VENDOR=@PP_K_VENDOR
+				WHERE	K_VENDOR=@PP_K_VENDOR
 
-				SET @VP_RESULTADO =  'There are already [ITEMS] with that Description ['+@PP_D_ITEM+']. In [VENDOR] ['+@PP_D_VENDOR+']' 		
+				SET @VP_RESULTADO =  'Ya existen [ITEMS] con la Descripción ['+@PP_D_ITEM+']. En el [Proveedor] ['+@PP_D_VENDOR+']' 		
 		END
 		
 		IF @VP_RESULTADO=''
@@ -64,7 +64,7 @@ AS
 
 				IF @VP_N_ITEM_X_ITEM_VENDOR>0
 				BEGIN
-					SET @VP_RESULTADO =  'There are already [ITEMS] with that Item Vendor ['+@PP_PART_NUMBER_ITEM_VENDOR+']'
+					SET @VP_RESULTADO =  'Ya existen [ITEMS] con el #Item_Vendor ['+@PP_PART_NUMBER_ITEM_VENDOR+']'
 				END
 			END
 		END
@@ -80,7 +80,7 @@ AS
 
 				IF @VP_N_ITEM_X_ITEM_PEARL>0
 				BEGIN
-					SET @VP_RESULTADO =  'There are already [ITEMS] with that Item Pearl ['+@PP_PART_NUMBER_ITEM_PEARL+']'
+					SET @VP_RESULTADO =  'Ya existen [ITEMS] con el #Item_Pearl ['+@PP_PART_NUMBER_ITEM_PEARL+']'
 				END
 			END
 		END
@@ -134,7 +134,7 @@ AS
 	-- =============================
 	IF @VP_RESULTADO=''
 		IF @VP_PO_X_ITEM>0
-			SET @VP_RESULTADO =  'The [ITEM] is added to one or more purchase orders.'
+			SET @VP_RESULTADO =  'El [ITEM] se encuentra agregado a una o más Ordenes de Compra.'
 	-- /////////////////////////////////////////////////////
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
 	-- /////////////////////////////////////////////////////
@@ -167,11 +167,11 @@ AS
 	-- ===========================
 	IF @VP_RESULTADO=''
 		IF ( @VP_K_ITEM IS NULL )
-			SET @VP_RESULTADO =  'The [ITEM] does not exist.' 	
+			SET @VP_RESULTADO =  'El [ITEM] no existe.'
 	-- ===========================
 	IF @VP_RESULTADO=''
 		IF @VP_L_BORRADO=1
-			SET @VP_RESULTADO =  'The [ITEM] was down.' 					
+			SET @VP_RESULTADO =  'El [ITEM] fue dado de baja.'
 	-- /////////////////////////////////////////////////////	
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
 	-- /////////////////////////////////////////////////////
@@ -203,7 +203,7 @@ AS
 									FROM	ITEM 
 									WHERE K_ITEM=@PP_K_ITEM
 		IF @VP_EXISTE_CLAVE>0
-			SET @VP_RESULTADO =  '[ITEM] ID not available.' 
+			SET @VP_RESULTADO =  '[ITEM] ID no disponible.'
 		END			
 	-- ///////////////////////////////////////////		
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO

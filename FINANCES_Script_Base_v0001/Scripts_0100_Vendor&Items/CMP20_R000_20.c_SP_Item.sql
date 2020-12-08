@@ -293,11 +293,11 @@ AS
 BEGIN TRANSACTION 
 BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////
-	IF @PP_K_CLASS_ITEM=2
+	IF @PP_K_CLASS_ITEM=2	AND		@PP_K_USUARIO_ACCION <> 139
 	BEGIN
 		--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
 		--RAISERROR ('It is not possible to insert ITEMS with class ROW_MATERIAL in this module', 16, 1 )
-		RAISERROR ('No es posible insertar ITEMS de clase ROW_MATERIAL en este modulo.', 16, 1 )
+		RAISERROR ('No es posible insertar ITEMS de clase ROW_MATERIAL en este módulo.', 16, 1 )
 	END
 	ELSE
 	BEGIN
@@ -417,7 +417,7 @@ END CATCH
 	
 	IF @VP_MENSAJE<>''
 		BEGIN
-			SET	@VP_MENSAJE = 'Not is possible [Insert] at [ITEM]: ' + @VP_MENSAJE 
+			SET	@VP_MENSAJE = 'No es posible [Agregar] el [ITEM]: ' + @VP_MENSAJE 
 		END
 
 	SELECT	@VP_MENSAJE AS MENSAJE, @VP_K_ITEM AS CLAVE
@@ -488,7 +488,7 @@ AS
 		BEGIN
 			IF @PP_PART_NUMBER_ITEM_PEARL=''
 			BEGIN 
-				DECLARE @VP_ERROR_3 VARCHAR(250)='PART_NUMBER_ITEM_PEARL. Must not be empty.'
+				DECLARE @VP_ERROR_3 VARCHAR(250)='PART_NUMBER_ITEM_PEARL. No debe estar vacío. Verifique...'
 				RAISERROR (@VP_ERROR_3, 16, 1 )
 			END
 		INSERT INTO ITEM
@@ -534,7 +534,7 @@ AS
 			IF @@ROWCOUNT = 0
 				BEGIN
 					--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-					DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not inserted. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
+					DECLARE @VP_ERROR_2 VARCHAR(250)='El ITEM no fue agregado. [ITEM#'+CONVERT(VARCHAR(10),@VP_K_ITEM)+']'
 					RAISERROR (@VP_ERROR_2, 16, 1 )
 				END
 		END
@@ -605,10 +605,10 @@ DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 DECLARE @VP_K_PRICE_LOG			INT
 BEGIN TRANSACTION 
 BEGIN TRY
-	IF @PP_K_CLASS_ITEM=2
+	IF @PP_K_CLASS_ITEM=2	AND	@PP_K_USUARIO_ACCION<>139
 	BEGIN
 		--RAISERROR (@VP_ERROR_1, 16, 1 ) --MENSAJE - Severity -State.
-		RAISERROR ('It is not possible to update ITEMS with class ROW_MATERIAL in this module', 16, 1 )
+		RAISERROR ('No es posible actualizar ITEMS de clase ROW_MATERIAL en este módulo.', 16, 1 )
 	END
 	ELSE
 	BEGIN
@@ -680,7 +680,7 @@ BEGIN TRY
 		
 						IF @@ROWCOUNT = 0
 							BEGIN
-								DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+								DECLARE @VP_ERROR_2 VARCHAR(250)='El ITEM no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 								RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
 							END
 						
@@ -708,7 +708,7 @@ BEGIN TRY
 
 							IF @@ROWCOUNT = 0
 							BEGIN
-								DECLARE @VP_ERROR VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+								DECLARE @VP_ERROR VARCHAR(250)='El LOG_PRICE no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 								RAISERROR (@VP_ERROR, 16, 1 ) --MENSAJE - Severity -State.
 							END
 
@@ -724,7 +724,7 @@ BEGIN TRY
 
 									IF @@ROWCOUNT = 0
 									BEGIN
-										DECLARE @VP_ERROR_7 VARCHAR(250)='The [PRICE] item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+										DECLARE @VP_ERROR_7 VARCHAR(250)='El [Precio] no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 										RAISERROR (@VP_ERROR_7, 16, 1 ) --MENSAJE - Severity -State.
 									END
 						END
@@ -754,7 +754,7 @@ BEGIN TRY
 
 						IF @@ROWCOUNT = 0
 						BEGIN
-							DECLARE @VP_ERROR_6 VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+							DECLARE @VP_ERROR_6 VARCHAR(250)='El LOG_PRICE no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 							RAISERROR (@VP_ERROR_6, 16, 1 ) --MENSAJE - Severity -State.
 						END
 
@@ -770,7 +770,7 @@ BEGIN TRY
 
 									IF @@ROWCOUNT = 0
 									BEGIN
-										DECLARE @VP_ERROR_5 VARCHAR(250)='The [PRICE] item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+										DECLARE @VP_ERROR_5 VARCHAR(250)='El [Precio] no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 										RAISERROR (@VP_ERROR_5, 16, 1 ) --MENSAJE - Severity -State.
 									END
 					END
@@ -790,7 +790,7 @@ END CATCH
 	
 	IF @VP_MENSAJE<>''
 		BEGIN
-			SET	@VP_MENSAJE = 'Not is possible [Update] at [ITEM]: ' + @VP_MENSAJE 
+			SET	@VP_MENSAJE = 'No es posible [Actualizar] el [ITEM]: ' + @VP_MENSAJE 
 		END
 
 	SELECT	@VP_MENSAJE AS MENSAJE, @PP_K_ITEM AS CLAVE
@@ -900,7 +900,7 @@ DECLARE @VP_K_PRICE_LOG			INT
 		
 						IF @@ROWCOUNT = 0
 							BEGIN
-								DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+								DECLARE @VP_ERROR_2 VARCHAR(250)='El ITEM no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 								RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
 							END
 						
@@ -928,7 +928,7 @@ DECLARE @VP_K_PRICE_LOG			INT
 
 							IF @@ROWCOUNT = 0
 							BEGIN
-								DECLARE @VP_ERROR VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+								DECLARE @VP_ERROR VARCHAR(250)='El PRICE_LOG no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 								RAISERROR (@VP_ERROR, 16, 1 ) --MENSAJE - Severity -State.
 							END
 
@@ -944,7 +944,7 @@ DECLARE @VP_K_PRICE_LOG			INT
 
 									IF @@ROWCOUNT = 0
 									BEGIN
-										DECLARE @VP_ERROR_7 VARCHAR(250)='The [PRICE] item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+										DECLARE @VP_ERROR_7 VARCHAR(250)='El [Precio] no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 										RAISERROR (@VP_ERROR_7, 16, 1 ) --MENSAJE - Severity -State.
 									END
 							SET @OU_ES_ACTUALIZABLE = 1
@@ -974,7 +974,7 @@ DECLARE @VP_K_PRICE_LOG			INT
 
 						IF @@ROWCOUNT = 0
 						BEGIN
-							DECLARE @VP_ERROR_6 VARCHAR(250)='The item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+							DECLARE @VP_ERROR_6 VARCHAR(250)='El ITEM no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 							RAISERROR (@VP_ERROR_6, 16, 1 ) --MENSAJE - Severity -State.
 						END
 
@@ -989,7 +989,7 @@ DECLARE @VP_K_PRICE_LOG			INT
 
 									IF @@ROWCOUNT = 0
 									BEGIN
-										DECLARE @VP_ERROR_5 VARCHAR(250)='The [PRICE] item was not update. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+										DECLARE @VP_ERROR_5 VARCHAR(250)='El [PRICE] no fue actualizado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 										RAISERROR (@VP_ERROR_5, 16, 1 ) --MENSAJE - Severity -State.
 									END
 						
@@ -1037,7 +1037,7 @@ BEGIN TRY
 	
 		IF @@ROWCOUNT = 0
 			BEGIN
-				DECLARE @VP_ERROR_2 VARCHAR(250)='The item was not Delete. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
+				DECLARE @VP_ERROR_2 VARCHAR(250)='El item no fue eliminado. [ITEM#'+CONVERT(VARCHAR(10),@PP_K_ITEM)+']'
 				RAISERROR (@VP_ERROR_2, 16, 1 ) --MENSAJE - Severity -State.
 			END
 		
@@ -1057,7 +1057,7 @@ END CATCH
 	
 	IF @VP_MENSAJE<>''
 		BEGIN
-			SET	@VP_MENSAJE = 'Not is possible [Delete] at [ITEM]: ' + @VP_MENSAJE 
+			SET	@VP_MENSAJE = 'No es posible [Eliminar] el [ITEM]: ' + @VP_MENSAJE 
 		END
 
 	SELECT	@VP_MENSAJE AS MENSAJE, @PP_K_ITEM AS CLAVE

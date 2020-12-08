@@ -47,7 +47,7 @@ AS
 		-- =============================
 			IF @VP_N_VENDOR_X_D_VENDOR>0
 			BEGIN
-				SET @VP_RESULTADO =  'There are already [VENDORS] with that Description ['+@PP_D_VENDOR+'].'
+				SET @VP_RESULTADO =  'Ya existen [PROVEEDORES] con la descripción ['+@PP_D_VENDOR+'].'
 			END
 	END			
 
@@ -71,7 +71,7 @@ AS
 		
 			IF @VP_N_VENDOR_X_RFC_VENDOR>0
 			BEGIN
-				SET @VP_RESULTADO =  'There are already [VENDORS] with that RFC ['+@PP_RFC_VENDOR+'].' 
+				SET @VP_RESULTADO =  'Ya existen [PROVEEDORES] con el RFC ['+@PP_RFC_VENDOR+'].' 
 			END
 	END
 		
@@ -123,7 +123,7 @@ AS
 
 	IF @VP_RESULTADO=''
 		IF @VP_N_FACTURA_X_VENDOR>0
-			SET @VP_RESULTADO =  'There are [INVOICE] assigned.' 
+			SET @VP_RESULTADO =  'Ya tiene [FACTURAS] asignadas.' 
 		
 	-- /////////////////////////////////////////////////////
 
@@ -166,13 +166,13 @@ AS
 
 	IF @VP_RESULTADO=''
 		IF ( @VP_K_VENDOR IS NULL )
-			SET @VP_RESULTADO =  'The [VENDOR] does not exist.' 
+			SET @VP_RESULTADO =  'El [Proveedor] no existe.' 
 	
 	-- ===========================
 
 	IF @VP_RESULTADO=''
 		IF @VP_L_BORRADO=1
-			SET @VP_RESULTADO =  'The [VENDOR] was down.' 
+			SET @VP_RESULTADO =  'El [Proveedor] fue dado de baja.' 
 					
 	-- /////////////////////////////////////////////////////
 	
