@@ -21,14 +21,19 @@ AND PACKING_NO = 'RU1201-1'
 --AND n_emb = '3'
 --GROUP BY NP_CLIENTE
 
+SELECT * --TOP 1 @VP_PRECIO_CUS_PART_NO = prc_or_disc_1 
+FROM OEPRCFIL_SQL WHERE LTRIM(RTRIM(filler_0001)) LIKE '%'+ 'PRUQFCLNRULK5' +'%' 
+ORDER BY END_DT DESC
+
+select * from OELINHST_SQL where  inv_no IN (553771, 553780, 553782, 553810, 553825)  and item_no = 'PRUQFCLNRULK5'
+
  select  *  FROM pf_schst 
  WHERE  TYPE = 'e' 
-AND PACKING_NO = 'RU1201-1'
+ AND cus_part_no = '184135A'
+--AND PACKING_NO = 'RU1201-1'
  --AND PROD_CAT= 'PWG'
-AND INV_NO IN ('551761',	'551770')
---AND CUS_PART_NO = '201025A'
---AND cus_part_no IN ('174954E', '174927D')
---AND CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6)) = 'FCNPDX9'
+--AND INV_NO IN ('553897')
+AND cdate2 = '20201213'
 ORDER BY cus_part_no
 
 SELECT TOP 1000 * FROM IMITMIDX_SQL WHERE prod_cat = 'PWG' LTRIM(RTRIM(item_no)) = 'FCNPDX9'
@@ -46,7 +51,7 @@ from OELINHST_SQL
 where inv_no='551835'
 AND item_desc_2 = 'CHRYSLER NAPPA HL1'
 
-select * from OEHDRHST_SQL where  inv_no IN (552545,552566) 
+select * from OEHDRHST_SQL where  inv_no IN (553897) 
 
  SELECT top 1000 * FROM imcatfil_sql --where prod_cat in ('PWZ','PWG')
  WHERE  L_BORRADO = 0 --AND FILLER_0001 IS NOT NULL 
@@ -55,8 +60,25 @@ select * from OEHDRHST_SQL where  inv_no IN (552545,552566)
  
 SELECT * FROM PROD_RPT_SQL ORDER BY PROD_CAT
 
- Select * from OEHDRHST_SQL where  inv_no IN (553699) 
- select * from OELINHST_SQL where inv_no='553699' --and cus_item_no = '172675P'
+
+ select  *  FROM pf_schst 
+ WHERE  TYPE = 'e' 
+ AND cus_part_no in ('184135A'                      
+,'184137A'                       
+,'184139A'                       
+,'184141A'                       
+,'184143A'                       
+,'184145A'                       
+,'184147A'                       
+,'184149A' )                       
+AND cdate2 = '20201213'
+ORDER BY cus_part_no
+
+
+ Select * from OEHDRHST_SQL where  inv_no IN (553897) 
+ select * from OELINHST_SQL where inv_no='553897' --and cus_item_no = '172675P'
+
+  select * from oeordlin_sql where ord_no = '00318962' AND item_no = 'PMWCJBRCPRDX9'
 
 SELECT  * FROM IMITMIDX_SQL WHERE LTRIM(RTRIM(item_no)) = 'PMWGLBRCNPDX9'
 
