@@ -25,15 +25,16 @@ SELECT * --TOP 1 @VP_PRECIO_CUS_PART_NO = prc_or_disc_1
 FROM OEPRCFIL_SQL WHERE LTRIM(RTRIM(filler_0001)) LIKE '%'+ 'PRUQFCLNRULK5' +'%' 
 ORDER BY END_DT DESC
 
-select * from OELINHST_SQL where  inv_no IN (553771, 553780, 553782, 553810, 553825)  and item_no = 'PRUQFCLNRULK5'
+select * from OELINHST_SQL where  inv_no IN (553899)
+
+ select  *  FROM pf_schst WHERE  TYPE = 'e' AND INV_NO IN ('553896')  ORDER BY cus_part_no
 
  select  *  FROM pf_schst 
  WHERE  TYPE = 'e' 
- AND cus_part_no = '184135A'
---AND PACKING_NO = 'RU1201-1'
- --AND PROD_CAT= 'PWG'
---AND INV_NO IN ('553897')
+ AND cus_part_no IN (select cus_item_no from OELINHST_SQL where  inv_no IN (553899))
 AND cdate2 = '20201213'
+and packing_no is null
+and inv_no is null
 ORDER BY cus_part_no
 
 SELECT TOP 1000 * FROM IMITMIDX_SQL WHERE prod_cat = 'PWG' LTRIM(RTRIM(item_no)) = 'FCNPDX9'
