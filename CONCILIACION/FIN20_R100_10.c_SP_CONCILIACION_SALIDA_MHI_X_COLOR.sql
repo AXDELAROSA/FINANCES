@@ -507,23 +507,34 @@ AS
 				AND cccuthst_sql.hidesqm <> 0
 				SET NOCOUNT ON
 
-				DECLARE @VP_N_PIEL INT= 0 
-				SELECT @VP_N_PIEL = COUNT(HIDES)
+				DECLARE @VP_TOTAL_PATTERSQM DECIMAL(13,2) = 0 
+				SELECT @VP_TOTAL_PATTERSQM = SUM(patternsqm)
 				FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
-				WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
+
+				DECLARE @VP_N_PIEL INT= 0 
+
+				IF @VP_TOTAL_PATTERSQM > 0
+					SELECT @VP_N_PIEL = COUNT(HIDES)
+					FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+					WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
 
 				-- //////////SE OBTENEN EL TOTSL SQM USADO//////////////////////////////////////
 				DECLARE @VP_TOTAL_SQM_USADO DECIMAL(13,2) = 0
-				SELECT  @VP_TOTAL_SQM_USADO = @VP_TOTAL_SQM_USADO + ROUND(((patternsqm / hidesqm) * 100) ,0) 
-				FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
-				WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
+
+				IF @VP_TOTAL_PATTERSQM > 0
+					SELECT  @VP_TOTAL_SQM_USADO = @VP_TOTAL_SQM_USADO + ROUND(((patternsqm / hidesqm) * 100) ,0) 
+					FROM @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
+					WHERE ROUND((( patternsqm /  hidesqm) * 100) ,0) >= 1
 
 				-- //////////SE BORRA EL CONTENIDO DE LA TABLA TEMPORAL//////////////////////////////////////
 				DELETE @VP_PIELES_CORTADAS_X_MES_X_COLOR_TBL
 				SET NOCOUNT ON
 
 				-- //////////SE OBTIENE LA UTILIZACION//////////////////////////////////////
-				DECLARE @VP_UTILIZACION DECIMAL(13,2) = @VP_TOTAL_SQM_USADO / @VP_N_PIEL
+				DECLARE @VP_UTILIZACION DECIMAL(13,2) = 0
+
+				IF @VP_TOTAL_PATTERSQM > 0
+					SET @VP_UTILIZACION = @VP_TOTAL_SQM_USADO / @VP_N_PIEL
 
 				-- ////////SE ACTUALIZA LA UTILIZACION PARA EL COLOR////////////////////////////////////////
 				UPDATE	[tempdb].[dbo].[TOTALES]
@@ -552,7 +563,9 @@ AS
 						SET @VP_TOTAL_PACKING = @VP_TOTAL_PACKING + @VP_ACUMULADO
 
 						DECLARE @VP_YIELD DECIMAL (13,2) = 0
-						SET @VP_YIELD = ( @VP_NET_AREA / @VP_UTILIZACION * 100 ) * @VP_ACUMULADO
+
+						IF @VP_UTILIZACION > 0
+							SET @VP_YIELD = ( @VP_NET_AREA / @VP_UTILIZACION * 100 ) * @VP_ACUMULADO
 
 						UPDATE [tempdb].[dbo].[TOTALES] 
 							SET YIELD = CONVERT(VARCHAR(15), @VP_YIELD)
