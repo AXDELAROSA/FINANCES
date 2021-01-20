@@ -7,7 +7,7 @@
 -- // Fecha creación:	16/11/2020
 -- ////////////////////////////////////////////////////////////// 
 
-USE [DATA_02PRUEBAS]
+USE [DATA_02]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_
 GO
 
 /*'2015 WK KL' --
-	EXEC	[dbo].[PG_CB_COLOR_X_PROGRAMA] 0,0,	 '2020/08/01' , '2020/08/30' , '2015 WK KL'  --'2020/08/01', '2020/08/30', 'WK GLDL'
+	EXEC	[dbo].[PG_CB_COLOR_X_PROGRAMA] 0,0,	 '2021/01/01' , '2021/01/19' , 'WL 75 TL'  --'2020/08/01', '2020/08/30', 'WK GLDL'
 */
 CREATE PROCEDURE [dbo].[PG_CB_COLOR_X_PROGRAMA]
 	@PP_K_SISTEMA_EXE			INT,
@@ -57,6 +57,18 @@ AS
 	AND	(	packing_no IS NOT NULL
 				OR inv_no IS NOT NULL )
 	AND LTRIM(RTRIM(pf_schst.prod_cat)) = @VP_PROD_CAT
+
+	INSERT INTO @VP_TA_CATALOGO 
+	SELECT	DISTINCT  LTRIM(RTRIM(item_desc_1))
+	FROM INVENTARIO_EMBARQUE 
+	INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(IMITMIDX_SQL.item_no)) = COLOR
+	AND SUBSTRING(LTRIM(RTRIM(IMITMIDX_SQL.item_no)),1,1) = 'F'
+	WHERE CONVERT(DATE, F_INVENTARIO_EMBARQUE) >= @PP_F_INICIO
+	AND		CONVERT(DATE, F_INVENTARIO_EMBARQUE) <= @PP_F_FIN
+	AND	(	packing_no IS NOT NULL
+				OR INVOICE_NO IS NOT NULL )
+	AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.PROD_CAT)) = @VP_PROD_CAT
+	AND LTRIM(RTRIM(item_desc_1)) NOT IN (SELECT TA_D_CATALOGO FROM @VP_TA_CATALOGO)
 
 	-- ///////////////////////////////////////////////////
 	SELECT	TA_K_CATALOGO	AS K_COMBOBOX,
