@@ -2720,8 +2720,6 @@ AS
 DECLARE @VP_MENSAJE			VARCHAR(500)=''
 DECLARE @VP_ESTATUS_PO		INT
 -- /////////////////////////////////////////////////////////////////////
---BEGIN TRANSACTION 
---BEGIN TRY
 	SELECT	@VP_ESTATUS_PO	=	K_STATUS_PURCHASE_ORDER
 	FROM	HEADER_PURCHASE_ORDER
 	WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
@@ -2730,8 +2728,6 @@ DECLARE @VP_ESTATUS_PO		INT
 	IF @VP_ESTATUS_PO=11
 	BEGIN
 		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
-		--DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
-		--DECLARE @PP_PO_INT INT;
 
 		DECLARE @VP_SUBJECT NVARCHAR(MAX) ;
 		DECLARE @VP_BODY_HTML  NVARCHAR(MAX) ;
@@ -2756,16 +2752,11 @@ DECLARE @VP_ESTATUS_PO		INT
 
 				SET @VP_SUBJECT = '[PO#' + CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +'] APROBADA'
 				
-				SET @VP_BODY_HTML =  
-				--N'<p style="color:#262626; font-size:20px">Buen día:<br>' +
+				SET @VP_BODY_HTML =
 				N'<span style="color:black; font-size:12pt">	Buen día:<br>' +
 				N'La orden de compra indicada en el asunto del mensaje, ha sido aprobada por Gerencia de Planta.<br>'+
 				N'Puedes Verificar el estatus del pedido en la pantalla donde generaste la Orden.<br><br>'+
-				N'Saludos.</span><br><br>'+
-				--N'Si el proveedor cuenta con dirección de correo electrónico agregada, <br>'+
-				--N'el formato será enviado automáticamente al destinatario, en caso contrario, <br>'+
-				--N'el departamento de finanzas le dará seguimiento. <br></p>'+
-	
+				N'Saludos.</span><br><br>'+	
 				N'<p><span style="color:maroon; font-size:12.0pt"><b>Fabiola Gerardo Arévalo | Compras</b></span><br>'+
 				N'<span style="color:lightpink; font-size:11pt"><b>Dirección:</b></span>'+
 				N'<span style="color:lightpink; font-size:11pt">Av. Rosa Maria Y. Fuentes 7050-A <b>|C.P.</b> 32320</span></br>'+
@@ -2776,7 +2767,7 @@ DECLARE @VP_ESTATUS_PO		INT
 
 
 					EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
-					@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
+					--@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
 					@subject = @VP_SUBJECT,
 					@body = @VP_BODY_HTML,  
 					@body_format = 'HTML',
@@ -2785,23 +2776,6 @@ DECLARE @VP_ESTATUS_PO		INT
 		END
 	-- ////////////////////////////////////////////////////////////////
 	-- ///////////////////////////////////////////////////////////////
---COMMIT TRANSACTION 
---END TRY
-
---BEGIN CATCH
---	/* Ocurrió un error, deshacemos los cambios*/ 
---	ROLLBACK TRANSACTION
---	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
---	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
---	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
---END CATCH
----- /////////////////////////////////////////////////////////////////////	
---	IF @VP_MENSAJE<>''
---	BEGIN
---		SET		@VP_MENSAJE = 'Not is possible [SEND MAIL] at [USERS PEARL]: ' + @VP_MENSAJE 
---	END
---	SELECT	@VP_MENSAJE AS MENSAJE, @PP_VALOR_PO AS CLAVE
-	-- //////////////////////////////////////////////////////////////
 GO
 
 
