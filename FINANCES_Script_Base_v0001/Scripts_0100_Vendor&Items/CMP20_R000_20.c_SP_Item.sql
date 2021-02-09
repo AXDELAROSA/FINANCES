@@ -89,6 +89,7 @@ AS
 	AND			( @PP_K_CURRENCY =-1		OR	ITEM.K_CURRENCY=@PP_K_CURRENCY )
 				-- =============================
 	AND			ITEM.L_BORRADO<>1
+	AND			VENDOR.L_BORRADO<>1
 	ORDER BY	K_VENDOR, D_ITEM,K_CURRENCY DESC
 	-- /////////////////////////////////////////////////////////////////////
 GO
@@ -161,6 +162,7 @@ AS
 	----AND			( @PP_K_TYPE_ITEM =-1		OR	ITEM.K_TYPE_ITEM=@PP_K_TYPE_ITEM )
 				-- =============================
 	AND			ITEM.L_BORRADO<>1
+	AND			VENDOR.L_BORRADO<>1
 	ORDER BY	K_VENDOR, D_ITEM,K_CURRENCY DESC
 	-- /////////////////////////////////////////////////////////////////////
 GO

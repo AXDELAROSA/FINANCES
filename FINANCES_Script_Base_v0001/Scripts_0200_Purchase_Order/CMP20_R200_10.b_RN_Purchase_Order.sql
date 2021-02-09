@@ -14,83 +14,6 @@ GO
 
 
 -- //////////////////////////////////////////////////////////////
--- // STORED PROCEDURE ---> RN_UNIQUE
--- //////////////////////////////////////////////////////////////
-
-
---IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_PURCHASE_ORDER_UNIQUE]') AND type in (N'P', N'PC'))
---	DROP PROCEDURE [dbo].[PG_RN_PURCHASE_ORDER_UNIQUE]
---GO
-
-
---CREATE PROCEDURE [dbo].[PG_RN_PURCHASE_ORDER_UNIQUE]
---	@PP_K_SISTEMA_EXE					[INT],
---	@PP_K_USUARIO_ACCION				[INT],
---	-- ===========================		
---	@PP_K_PURCHASE_ORDER				[INT],	
---	@PP_D_PURCHASE_ORDER				[VARCHAR] (250),
---	@PP_RFC_PURCHASE_ORDER				[VARCHAR] (25),
---		-- ===========================		
---	@OU_RESULTADO_VALIDACION			[VARCHAR] (500)		OUTPUT
---AS
---	DECLARE @VP_RESULTADO				VARCHAR(500) = ''
-		
---	-- ///////////////////////////////////////////
---	--IF @VP_RESULTADO=''
---	--BEGIN	
---	--	DECLARE @VP_N_PURCHASE_ORDER_X_D_PURCHASE_ORDER			INT
-		
---	--	SELECT	@VP_N_PURCHASE_ORDER_X_D_PURCHASE_ORDER =		COUNT	(PURCHASE_ORDER.K_PURCHASE_ORDER)
---	--											FROM	PURCHASE_ORDER
---	--											WHERE	PURCHASE_ORDER.K_PURCHASE_ORDER<>@PP_K_PURCHASE_ORDER
---	--											AND		PURCHASE_ORDER.D_PURCHASE_ORDER=@PP_D_PURCHASE_ORDER										
---	--	-- =============================
---	--		IF @VP_N_PURCHASE_ORDER_X_D_PURCHASE_ORDER>0
---	--		BEGIN
---	--			SET @VP_RESULTADO =  'There are already [PURCHASE_ORDERS] with that Description ['+@PP_D_PURCHASE_ORDER+'].'
---	--		END
---	--END			
-
---	---- ///////////////////////////////////////////
---	--IF @VP_RESULTADO=''
---	--BEGIN	
---	--	DECLARE @VP_N_PURCHASE_ORDER_X_RFC_PURCHASE_ORDER		INT = 0
-
---	--	IF @PP_RFC_PURCHASE_ORDER=''			-- SOLAMENTE APLICA LA VALIDACION CUANDO EL RFC_PURCHASE_ORDER NO VIENE VACIO
---	--	BEGIN 
---	--		SET		@VP_N_PURCHASE_ORDER_X_RFC_PURCHASE_ORDER =		0
---	--	END
---	--END
---	--ELSE
---	--BEGIN
---	--		SELECT	@VP_N_PURCHASE_ORDER_X_RFC_PURCHASE_ORDER =		COUNT	(PURCHASE_ORDER.K_PURCHASE_ORDER)
---	--											FROM	PURCHASE_ORDER
---	--											WHERE	PURCHASE_ORDER.K_PURCHASE_ORDER<>@PP_K_PURCHASE_ORDER
---	--											AND		PURCHASE_ORDER.RFC_PURCHASE_ORDER=@PP_RFC_PURCHASE_ORDER	
---	--											AND		@PP_RFC_PURCHASE_ORDER<>''			
-		
---	--		IF @VP_N_PURCHASE_ORDER_X_RFC_PURCHASE_ORDER>0
---	--		BEGIN
---	--			SET @VP_RESULTADO =  'There are already [PURCHASE_ORDERS] with that RFC ['+@PP_RFC_PURCHASE_ORDER+'].' 
---	--		END
---	--END
-		
---	---- ///////////////////////////////////////////
-	
---	--IF @VP_RESULTADO<>''
---	--BEGIN
---	--	SET	@VP_RESULTADO = @VP_RESULTADO + ' //UNI//'
---	--END
-	
---	-- ///////////////////////////////////////////
-		
---	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
-
---	-- /////////////////////////////////////////////////////
---GO
-
-
--- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> RN_BORRABLE
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_PURCHASE_ORDER_EDIT]') AND type in (N'P', N'PC'))
@@ -132,6 +55,41 @@ AS
 	--IF @VP_RESULTADO=''
 	--	IF @VP_N_FACTURA_X_PURCHASE_ORDER>0
 	--		SET @VP_RESULTADO =  'There are [INVOICE] assigned.' 		
+	-- /////////////////////////////////////////////////////
+	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
+	-- /////////////////////////////////////////////////////
+GO
+
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> RN_BORRABLE
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_RN_PURCHASE_ORDER_EDIT_FINANCES]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_RN_PURCHASE_ORDER_EDIT_FINANCES]
+GO
+CREATE PROCEDURE [dbo].[PG_RN_PURCHASE_ORDER_EDIT_FINANCES]
+	@PP_K_SISTEMA_EXE					[INT],
+	@PP_K_USUARIO_ACCION				[INT],
+	-- ===========================		
+	@PP_K_HEADER_PURCHASE_ORDER			[INT],
+	@PP_K_PO_TEMPORAL					[INT],
+	-- ===========================		
+	@OU_RESULTADO_VALIDACION			[VARCHAR] (200)		OUTPUT
+AS
+	DECLARE @VP_RESULTADO				VARCHAR(300) = ''
+	DECLARE @VP_STATUS_PO				INT
+-- /////////////////////////////////////////////////////
+	DECLARE @VP_N_FACTURA_X_PURCHASE_ORDER		INT = 0
+
+	SELECT	@VP_STATUS_PO=K_STATUS_PURCHASE_ORDER
+	FROM	HEADER_PURCHASE_ORDER
+	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
+	AND		K_PO_TEMPORAL=@PP_K_PO_TEMPORAL
+
+	-- =============================
+	-- SÓLO EN ESTOS ESTADOS SE PUEDE MODIFICAR UNA ORDEN DE COMRPA, ESTATUS DE RECHAZO Y DE CREADA.
+	IF @VP_STATUS_PO NOT IN (4,5,6,7,8,9,11)
+		SET @VP_RESULTADO =  'No es posible modificar la [PO], Verifique...' 
 	-- /////////////////////////////////////////////////////
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
 	-- /////////////////////////////////////////////////////
