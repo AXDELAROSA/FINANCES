@@ -19,7 +19,6 @@ GO
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 
--- EXECUTE [PG_CB_ESTATUS_INVENTARIO_EMBARQUE] 001,144, 0
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_COLOR_X_PROGRAMA]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_CB_COLOR_X_PROGRAMA]
 GO
@@ -82,12 +81,109 @@ AS
 GO
 
 
+ -- USE DATA_02
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_COLOR_CON_DESCRIPCION]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CB_COLOR_CON_DESCRIPCION]
+GO
+
+/*
+	EXEC	[dbo].[PG_CB_COLOR_CON_DESCRIPCION] 0,0,	0
+*/
+CREATE PROCEDURE [dbo].[PG_CB_COLOR_CON_DESCRIPCION]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO				INT,
+	--============================
+	@PP_L_CON_TODOS				INT
+AS
+
+	DECLARE @VP_TA_CATALOGO	AS TABLE
+				(	TA_K_CATALOGO		VARCHAR(10),
+					TA_D_CATALOGO		VARCHAR(150) )
+	
+	IF @PP_L_CON_TODOS = 1
+	BEGIN
+		INSERT INTO @VP_TA_CATALOGO
+			( TA_K_CATALOGO,	TA_D_CATALOGO	)
+		VALUES
+			( '( TODOS )',				'( TODOS )'		)
+	END
+
+	INSERT INTO @VP_TA_CATALOGO
+	SELECT	LTRIM(RTRIM(ITEM_NO)), 
+			CONCAT('( ', LTRIM(RTRIM(ITEM_NO)), ' ) ', LTRIM(RTRIM(item_desc_1)))
+	FROM	IMITMIDX_SQL 
+	WHERE	SUBSTRING(LTRIM(RTRIM(ITEM_NO)), 1, 1) = 'F'
+	AND LTRIM(RTRIM(ITEM_NO)) IN ( SELECT DISTINCT LTRIM(RTRIM(COLOUR)) FROM COLORES_ACTIVOS)
+	ORDER BY ITEM_NO
+	
+	-- ///////////////////////////////////////////////////
+	SELECT	TA_K_CATALOGO	AS K_COMBOBOX,
+				TA_D_CATALOGO	AS D_COMBOBOX 
+		FROM	@VP_TA_CATALOGO
+		--ORDER BY  TA_D_CATALOGO 
+
+	-- ==========================================
+		
+	-- ////////////////////////////////////////////////////
+GO
+
+
+
+-- USE DATA_02
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_COLOR_CON_DESCRIPCION_X_CLIENTE]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_CB_COLOR_CON_DESCRIPCION_X_CLIENTE]
+GO
+
+/*
+	EXEC	[dbo].[PG_CB_COLOR_CON_DESCRIPCION_X_CLIENTE] 0,0,	0, 'YANG03'
+*/
+CREATE PROCEDURE [dbo].[PG_CB_COLOR_CON_DESCRIPCION_X_CLIENTE]
+	@PP_K_SISTEMA_EXE			INT,
+	@PP_K_USUARIO				INT,
+	--============================
+	@PP_L_CON_TODOS				INT,
+	@PP_CLIENTE					VARCHAR(50)
+AS
+
+	DECLARE @VP_TA_CATALOGO	AS TABLE
+				(	TA_K_CATALOGO		VARCHAR(10),
+					TA_D_CATALOGO		VARCHAR(150) )
+	
+	IF @PP_L_CON_TODOS = 1
+	BEGIN
+		INSERT INTO @VP_TA_CATALOGO
+			( TA_K_CATALOGO,	TA_D_CATALOGO	)
+		VALUES
+			( '( TODOS )',				'( TODOS )'		)
+	END
+
+	INSERT INTO @VP_TA_CATALOGO
+	SELECT	LTRIM(RTRIM(ITEM_NO)), 
+			CONCAT('( ', LTRIM(RTRIM(ITEM_NO)), ' ) ', LTRIM(RTRIM(item_desc_1)))
+	FROM	IMITMIDX_SQL 
+	WHERE	SUBSTRING(LTRIM(RTRIM(ITEM_NO)), 1, 1) = 'F'
+	AND LTRIM(RTRIM(ITEM_NO)) IN ( SELECT DISTINCT LTRIM(RTRIM(COLOUR)) 
+									FROM COLORES_ACTIVOS
+									WHERE LTRIM(RTRIM(cus_no)) = @PP_CLIENTE )
+	ORDER BY ITEM_NO
+	
+	-- ///////////////////////////////////////////////////
+	SELECT	TA_K_CATALOGO	AS K_COMBOBOX,
+				TA_D_CATALOGO	AS D_COMBOBOX 
+		FROM	@VP_TA_CATALOGO
+		--ORDER BY  TA_D_CATALOGO 
+
+	-- ==========================================
+		
+	-- ////////////////////////////////////////////////////
+GO
+
+
 
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 --	USE [DATA_02]
--- EXECUTE [PG_CB_ESTATUS_INVENTARIO_EMBARQUE] 001,144, 0
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_CB_PROGRAMA_CON_PACKING]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_CB_PROGRAMA_CON_PACKING]
 GO
