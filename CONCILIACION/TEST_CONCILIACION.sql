@@ -66,7 +66,6 @@ select * from OEHDRHST_SQL where  inv_no IN (553897)
  
 SELECT * FROM PROD_RPT_SQL ORDER BY PROD_CAT
 
-
  select  *  FROM pf_schst 
  WHERE  TYPE = 'e' 
  AND cus_part_no in ('184135A'                      

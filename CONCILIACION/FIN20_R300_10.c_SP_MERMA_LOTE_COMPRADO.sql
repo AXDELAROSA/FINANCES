@@ -30,7 +30,7 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_
 GO
 
 /*
- EXEC	[dbo].[PG_LI_MERMA_LOTE_COMPRADO] 0,144, '', 'FMCKDX9'
+ EXEC	[dbo].[PG_LI_MERMA_LOTE_COMPRADO] 0,144,  '' , '( TODOS )' , '2021/02/01' , '2021/02/12' 
 */
 
 CREATE PROCEDURE [dbo].[PG_LI_MERMA_LOTE_COMPRADO]
@@ -38,7 +38,9 @@ CREATE PROCEDURE [dbo].[PG_LI_MERMA_LOTE_COMPRADO]
 	@PP_K_USUARIO_ACCION				INT,
 	-- ===========================
 	@PP_BUSCAR							VARCHAR(50),
-	@PP_COLOR							VARCHAR(50)
+	@PP_COLOR							VARCHAR(50),
+	@PP_F_INICIO						DATE,
+	@PP_F_FIN							DATE
 AS
 
 	DECLARE @VP_MENSAJE				VARCHAR(300) = ''
@@ -108,7 +110,10 @@ AS
 			OR	LOT_CRUST								LIKE '%'+@PP_BUSCAR+'%'  )
 			-- =============================
 	AND		( @PP_COLOR = '( TODOS )'		OR	COLOR = @PP_COLOR )
-			-- =============================
+	-- =============================
+	AND CONVERT(DATE,F_MERMA_LOTE_COMPRADO) >= @PP_F_INICIO
+	AND	CONVERT(DATE,F_MERMA_LOTE_COMPRADO) <= @PP_F_FIN	
+	-- =============================
 	ORDER BY	COLOR, LOT_CRUST, F_MERMA_LOTE_COMPRADO
 
 	-- ////////////////////////////////////////////////
