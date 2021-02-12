@@ -215,12 +215,16 @@ AS
 
 	DECLARE @VP_MENSAJE			VARCHAR(300)	= ''
 	
+	-- // SECCION#1 ////////////////////////////////////////////////////////// VALIDACIONES
+		EXECUTE [dbo].[PG_RN_MERMA_LOTE_COMPRADO]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+													@PP_COLOR, @PP_LOT_CRUST,
+													@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
+
 	-- // SECCION#2 ////////////////////////////////////////////////////////// ACCION A REALIZAR
 	IF @VP_MENSAJE=''
 		BEGIN
 			BEGIN TRANSACTION 
 			BEGIN TRY
-
 				INSERT INTO [MERMA_LOTE_COMPRADO](	[NUMERO_FACTURA],		
 												[COLOR],					.
 												[LOT_CRUST],			
