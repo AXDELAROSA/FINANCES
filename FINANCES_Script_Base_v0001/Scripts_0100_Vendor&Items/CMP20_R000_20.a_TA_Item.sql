@@ -85,10 +85,8 @@ CREATE PROCEDURE [dbo].[PG_CI_CLASS_ITEM]
 	@PP_S_CLASS_ITEM				VARCHAR(10),
 	@PP_O_CLASS_ITEM				INT,
 	@PP_L_CLASS_ITEM				INT
-AS			
-	
+AS				
 	-- ===========================
-
 	INSERT INTO CLASS_ITEM
 			(	[K_CLASS_ITEM], [D_CLASS_ITEM], 
 				[C_CLASS_ITEM], [S_CLASS_ITEM], 
@@ -103,6 +101,8 @@ GO
 EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,0, '(TO DEFINE)'	,					'' ,					'2DFNE', 00,1
 EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,1, 'ASSETS AND SUPPLIES',			'ASSETS AND SUPPLIES',	'SUPPL', 10,1
 EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,2, 'ROW MATERIAL',					'ROW MATERIAL',			'ROWMA', 20,1
+-- ============================================================================================================		-- AX: 20210322
+EXECUTE [dbo].[PG_CI_CLASS_ITEM] 0,139,3, 'COLORS',							'COLORS',				'COLRS', 30,1
 GO
 
 

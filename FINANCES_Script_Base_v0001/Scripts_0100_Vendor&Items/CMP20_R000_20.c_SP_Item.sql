@@ -90,6 +90,7 @@ AS
 				-- =============================
 	AND			ITEM.L_BORRADO<>1
 	AND			VENDOR.L_BORRADO<>1
+	--AND			ITEM.K_CLASS_ITEM	NOT IN (3)
 	ORDER BY	K_VENDOR, D_ITEM,K_CURRENCY DESC
 	-- /////////////////////////////////////////////////////////////////////
 GO
@@ -163,6 +164,7 @@ AS
 				-- =============================
 	AND			ITEM.L_BORRADO<>1
 	AND			VENDOR.L_BORRADO<>1
+	AND			ITEM.K_CLASS_ITEM	NOT IN (3)
 	ORDER BY	K_VENDOR, D_ITEM,K_CURRENCY DESC
 	-- /////////////////////////////////////////////////////////////////////
 GO
@@ -414,7 +416,7 @@ AS
 BEGIN TRANSACTION 
 BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////
-	IF @PP_K_CLASS_ITEM=2	AND		@PP_K_USUARIO_ACCION <> 139
+	IF @PP_K_CLASS_ITEM IN (2,3)	AND		@PP_K_USUARIO_ACCION <> 139
 	BEGIN
 		--RAISERROR ('It is not possible to insert ITEMS with class ROW_MATERIAL in this module', 16, 1 )
 		RAISERROR ('No es posible insertar ITEMS de clase ROW_MATERIAL en este módulo. Diríjase a ITEM_MASTER', 16, 1 )
