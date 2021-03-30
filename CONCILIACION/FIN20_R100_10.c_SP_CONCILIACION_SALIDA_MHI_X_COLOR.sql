@@ -72,213 +72,207 @@ AS
 		DECLARE	@VP_TOTAL_INV_NO DECIMAL(13,2) = 0, @VP_AMOUNT VARCHAR(15) = '', @VP_NET_AREA DECIMAL(13,5) = 0
 
 		-- //////////////SE CREA EL CURSOR/////////////////////////////
-		DECLARE CU_SALIDA_MATERIAL CURSOR 
-		FOR SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),
-						LTRIM(RTRIM(ITEM_NO)), 
-						--LTRIM(RTRIM(item_desc_1)), 
-						LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
-			FROM pf_schst 
-			-- ===========================
-			INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
-					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
-			-- ===========================
-			--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
-			INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', RIGHT(LTRIM(RTRIM(part_no)),6))
-					AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
-			-- ===========================
-			WHERE TYPE = 'e' -- ENBARCADO
-			AND CDATE >= @PP_F_INICIO
-			AND CDATE <= @PP_F_FIN	
-			AND	(	packing_no IS NOT NULL
-						OR inv_no IS NOT NULL )
-			AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @PP_PROGRAMA
-			AND LTRIM(RTRIM(ITEM_NO)) = @PP_COLOR
-			--AND LTRIM(RTRIM(item_desc_1)) = @PP_COLOR
-			ORDER BY	LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
-						LTRIM(RTRIM(ITEM_NO)),
-						--LTRIM(RTRIM(item_desc_1)),
-						LTRIM(RTRIM(pf_schst.cus_part_no)) ASC
-			SET NOCOUNT ON
+		--DECLARE CU_SALIDA_MATERIAL CURSOR 
+		--FOR SELECT	DISTINCT LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),
+		--				LTRIM(RTRIM(ITEM_NO)), 
+		--				--LTRIM(RTRIM(item_desc_1)), 
+		--				LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO
+		--	FROM pf_schst 
+		--	-- ===========================
+		--	INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+		--			AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+		--			AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+		--	-- ===========================
+		--	--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+		--	INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', RIGHT(LTRIM(RTRIM(part_no)),6))
+		--			AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+		--	-- ===========================
+		--	WHERE TYPE = 'e' -- ENBARCADO
+		--	AND CDATE >= @PP_F_INICIO
+		--	AND CDATE <= @PP_F_FIN	
+		--	AND	(	packing_no IS NOT NULL
+		--				OR inv_no IS NOT NULL )
+		--	AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @PP_PROGRAMA
+		--	AND LTRIM(RTRIM(ITEM_NO)) = @PP_COLOR
+		--	--AND LTRIM(RTRIM(item_desc_1)) = @PP_COLOR
+		--	ORDER BY	LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
+		--				LTRIM(RTRIM(ITEM_NO)),
+		--				--LTRIM(RTRIM(item_desc_1)),
+		--				LTRIM(RTRIM(pf_schst.cus_part_no)) ASC
+		--	SET NOCOUNT ON
 		
-		OPEN CU_SALIDA_MATERIAL
-		FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL		
+		--OPEN CU_SALIDA_MATERIAL
+		--FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL		
 									
-		-- ////////////////////SE RECORRE EL CURSOR//////////////////////////	
-		WHILE @@FETCH_STATUS = 0
-			BEGIN
-				DECLARE CU_SALIDA_MATERIAL_X_DIA CURSOR 
-				FOR SELECT	CONVERT(DATE, CDATE2) CDATE, 
-							LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) AS PROD_CAT_DESC, 
-							LTRIM(RTRIM(ITEM_NO)) AS TYPE, 
-							--LTRIM(RTRIM(item_desc_1)) AS TYPE, 
-							LTRIM(RTRIM(pf_schst.part_no)) AS PART_NO, 
-							LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO, 
-							SUM(qty) AS QTY, 
-							--ISNULL(LTRIM(RTRIM(packing_no)), '') AS PACKING_NO,
-							CASE WHEN ISNULL(LTRIM(RTRIM(inv_no)), '') = '' THEN ISNULL(LTRIM(RTRIM(packing_no)), '')
-								ELSE ISNULL(LTRIM(RTRIM(inv_no)), '') END AS PACKING_NO ,
-							ISNULL(LTRIM(RTRIM(inv_no)), 'N/F') AS INV_NO
-					FROM pf_schst 
-					INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', RIGHT(LTRIM(RTRIM(part_no)),6))
-					--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
-					AND SUBSTRING(LTRIM(RTRIM(item_no)), 1,1) = 'F'
-					INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
-					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
-					AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
-					WHERE TYPE = 'e' -- ENBARCADO
-					AND CDATE >= @PP_F_INICIO
-					AND CDATE <= @PP_F_FIN	
-					AND	(	packing_no IS NOT NULL
-								OR inv_no IS NOT NULL )
-					AND LTRIM(RTRIM(pf_schst.cus_part_no)) = @VP_CUS_PART_NO_PRINCIPAL
-					AND LTRIM(RTRIM(ITEM_NO)) = @VP_TYPE_PRINCIPAL
-					--AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
-					AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL
-					GROUP BY	CDATE2, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
-								LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),  LTRIM(RTRIM(packing_no)), 
-								LTRIM(RTRIM(inv_no)), 
-								LTRIM(RTRIM(ITEM_NO))
-								--LTRIM(RTRIM(item_desc_1))
-					ORDER BY	LTRIM(RTRIM(ITEM_NO)),
-								--LTRIM(RTRIM(item_desc_1)), 
-								LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
-								CDATE2, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no)),
-								LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)) ASC
-				SET NOCOUNT ON
+		---- ////////////////////SE RECORRE EL CURSOR//////////////////////////	
+		--WHILE @@FETCH_STATUS = 0
+		--	BEGIN
+		--		DECLARE CU_SALIDA_MATERIAL_X_DIA CURSOR 
+		--		FOR SELECT	CONVERT(DATE, CDATE2) CDATE, 
+		--					LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) AS PROD_CAT_DESC, 
+		--					LTRIM(RTRIM(ITEM_NO)) AS TYPE, 
+		--					--LTRIM(RTRIM(item_desc_1)) AS TYPE, 
+		--					LTRIM(RTRIM(pf_schst.part_no)) AS PART_NO, 
+		--					LTRIM(RTRIM(pf_schst.cus_part_no)) AS CUS_PART_NO, 
+		--					SUM(qty) AS QTY, 
+		--					--ISNULL(LTRIM(RTRIM(packing_no)), '') AS PACKING_NO,
+		--					CASE WHEN ISNULL(LTRIM(RTRIM(inv_no)), '') = '' THEN ISNULL(LTRIM(RTRIM(packing_no)), '')
+		--						ELSE ISNULL(LTRIM(RTRIM(inv_no)), '') END AS PACKING_NO ,
+		--					ISNULL(LTRIM(RTRIM(inv_no)), 'N/F') AS INV_NO
+		--			FROM pf_schst 
+		--			INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', RIGHT(LTRIM(RTRIM(part_no)),6))
+		--			--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+		--			AND SUBSTRING(LTRIM(RTRIM(item_no)), 1,1) = 'F'
+		--			INNER JOIN imcatfil_sql ON LTRIM(RTRIM(imcatfil_sql.prod_cat)) = LTRIM(RTRIM(pf_schst.prod_cat))
+		--			AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'DO NOT DELETE'
+		--			AND LTRIM(RTRIM(PROD_CAT_DESC)) <> 'OBSOLETE'
+		--			WHERE TYPE = 'e' -- ENBARCADO
+		--			AND CDATE >= @PP_F_INICIO
+		--			AND CDATE <= @PP_F_FIN	
+		--			AND	(	packing_no IS NOT NULL
+		--						OR inv_no IS NOT NULL )
+		--			AND LTRIM(RTRIM(pf_schst.cus_part_no)) = @VP_CUS_PART_NO_PRINCIPAL
+		--			AND LTRIM(RTRIM(ITEM_NO)) = @VP_TYPE_PRINCIPAL
+		--			--AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
+		--			AND LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)) = @VP_PROD_CAT_DESC_PRINCIPAL
+		--			GROUP BY	CDATE2, LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)), 
+		--						LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)),  LTRIM(RTRIM(packing_no)), 
+		--						LTRIM(RTRIM(inv_no)), 
+		--						LTRIM(RTRIM(ITEM_NO))
+		--						--LTRIM(RTRIM(item_desc_1))
+		--			ORDER BY	LTRIM(RTRIM(ITEM_NO)),
+		--						--LTRIM(RTRIM(item_desc_1)), 
+		--						LTRIM(RTRIM(imcatfil_sql.prod_cat_desc)), 
+		--						CDATE2, LTRIM(RTRIM(packing_no)), LTRIM(RTRIM(inv_no)),
+		--						LTRIM(RTRIM(part_no)), LTRIM(RTRIM(cus_part_no)) ASC
+		--		SET NOCOUNT ON
 
-				OPEN CU_SALIDA_MATERIAL_X_DIA
-				FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
+		--		OPEN CU_SALIDA_MATERIAL_X_DIA
+		--		FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
 									
-				-- ////////////////////SE RECORRE EL CURSOR//////////////////////////	
-				WHILE @@FETCH_STATUS = 0
-					BEGIN
-						-- ///////////SE INICIALIZAN LAS VARIABLES/////////////////////////////////////
-						DECLARE @VP_PACKING_ORIGINAL VARCHAR(150) = @VP_PACKING_NO
+		--		-- ////////////////////SE RECORRE EL CURSOR//////////////////////////	
+		--		WHILE @@FETCH_STATUS = 0
+		--			BEGIN
+		--				-- ///////////SE INICIALIZAN LAS VARIABLES/////////////////////////////////////
+		--				DECLARE @VP_PACKING_ORIGINAL VARCHAR(150) = @VP_PACKING_NO
 
-						SET @VP_TOTAL_INV_NO = 0
-						SET @VP_AMOUNT = ''
+		--				SET @VP_TOTAL_INV_NO = 0
+		--				SET @VP_AMOUNT = ''
 
-						-- ///////////SE ASIGNA EL PACKING/////////////////////////////////////
-						IF @VP_PACKING_NO = ''
-							SET @VP_PACKING_NO = @VP_INV_NO
+		--				-- ///////////SE ASIGNA EL PACKING/////////////////////////////////////
+		--				IF @VP_PACKING_NO = ''
+		--					SET @VP_PACKING_NO = @VP_INV_NO
 
-						-- ///////////SE OBTIENE EL TOTAL DE LA FACTURA/////////////////////////////////////
-						IF @VP_INV_NO <> 'N/F'
-							BEGIN
-								SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
-								FROM OELINHST_SQL 
-								WHERE inv_no = @VP_INV_NO
-								AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
-								--AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
-								SET NOCOUNT ON
+		--				-- ///////////SE OBTIENE EL TOTAL DE LA FACTURA/////////////////////////////////////
+		--				IF @VP_INV_NO <> 'N/F'
+		--					BEGIN
+		--						SELECT @VP_TOTAL_INV_NO = SUM(qty_to_ship * unit_price)
+		--						FROM OELINHST_SQL 
+		--						WHERE inv_no = @VP_INV_NO
+		--						AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
+		--						--AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
+		--						SET NOCOUNT ON
 
-								SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
+		--						SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
 
-								SELECT	TOP 1 @VP_PACKING_ORIGINAL = ISNULL(packing_no, '')
-								FROM pf_schst 
-								INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', RIGHT(LTRIM(RTRIM(part_no)),6))
-								--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
-								AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
-								WHERE TYPE = 'e' -- ENBARCADO
-								AND CDATE >= @PP_F_INICIO
-								AND CDATE <= @PP_F_FIN	
-								AND	(	packing_no IS NOT NULL
-											OR inv_no IS NOT NULL )
-								AND LTRIM(RTRIM(item_no)) = @VP_TYPE_PRINCIPAL
-								--AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
-								AND inv_no = @VP_INV_NO
-							END								
+		--						SELECT	TOP 1 @VP_PACKING_ORIGINAL = ISNULL(packing_no, '')
+		--						FROM pf_schst 
+		--						INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', RIGHT(LTRIM(RTRIM(part_no)),6))
+		--						--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(item_no)) = CONCAT('F', SUBSTRING(part_no, (LEN(LTRIM(RTRIM(part_no))) - 5), 6))
+		--						AND SUBSTRING(LTRIM(RTRIM(item_no)),1,1) = 'F'
+		--						WHERE TYPE = 'e' -- ENBARCADO
+		--						AND CDATE >= @PP_F_INICIO
+		--						AND CDATE <= @PP_F_FIN	
+		--						AND	(	packing_no IS NOT NULL
+		--									OR inv_no IS NOT NULL )
+		--						AND LTRIM(RTRIM(item_no)) = @VP_TYPE_PRINCIPAL
+		--						--AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
+		--						AND inv_no = @VP_INV_NO
+		--					END								
 
-						-- /////////SE OBTIENE EL PRECIO DEL NUMERO DE PARTE///////////////////////////////////////
-						DECLARE @VP_PRECIO_CUS_PART_NO DECIMAL(13,2) = 0
-						IF @VP_INV_NO <> 'N/F'
-							BEGIN
-								SELECT @VP_PRECIO_CUS_PART_NO = Unit_price
-								FROM OELINHST_SQL 
-								WHERE inv_no = @VP_INV_NO
-								--AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
-								AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
-								AND LTRIM(RTRIM(CUS_ITEM_NO)) = @VP_CUS_PART_NO
-								SET NOCOUNT ON
+		--				-- /////////SE OBTIENE EL PRECIO DEL NUMERO DE PARTE///////////////////////////////////////
+		--				DECLARE @VP_PRECIO_CUS_PART_NO DECIMAL(13,2) = 0
+		--				IF @VP_INV_NO <> 'N/F'
+		--					BEGIN
+		--						SELECT @VP_PRECIO_CUS_PART_NO = Unit_price
+		--						FROM OELINHST_SQL 
+		--						WHERE inv_no = @VP_INV_NO
+		--						--AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
+		--						AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
+		--						AND LTRIM(RTRIM(CUS_ITEM_NO)) = @VP_CUS_PART_NO
+		--						SET NOCOUNT ON
 
-								IF @VP_PRECIO_CUS_PART_NO IS NULL 
-									SET @VP_PRECIO_CUS_PART_NO = 0
+		--						IF @VP_PRECIO_CUS_PART_NO IS NULL 
+		--							SET @VP_PRECIO_CUS_PART_NO = 0
 
-							END
-						ELSE
-							BEGIN
-								SELECT TOP 1 @VP_PRECIO_CUS_PART_NO = prc_or_disc_1 
-								FROM OEPRCFIL_SQL WHERE LTRIM(RTRIM(filler_0001)) LIKE '%'+ @VP_PART_NO +'%' 
-								ORDER BY END_DT DESC
+		--					END
+		--				ELSE
+		--					BEGIN
+		--						SELECT TOP 1 @VP_PRECIO_CUS_PART_NO = prc_or_disc_1 
+		--						FROM OEPRCFIL_SQL WHERE LTRIM(RTRIM(filler_0001)) LIKE '%'+ @VP_PART_NO +'%' 
+		--						ORDER BY END_DT DESC
 
-								IF @VP_PRECIO_CUS_PART_NO IS NULL 
-									SET @VP_PRECIO_CUS_PART_NO = 0
-							END
+		--						IF @VP_PRECIO_CUS_PART_NO IS NULL 
+		--							SET @VP_PRECIO_CUS_PART_NO = 0
+		--					END
 
-						SELECT   @VP_NET_AREA = ISNULL(cube_width, 0) 
-						FROM IMITMIDX_SQL
-						WHERE LTRIM(RTRIM(item_no)) = @VP_PART_NO	
+		--				SELECT   @VP_NET_AREA = ISNULL(cube_width, 0) 
+		--				FROM IMITMIDX_SQL
+		--				WHERE LTRIM(RTRIM(item_no)) = @VP_PART_NO	
 						
-						---- ////////////////////////////////////////////////
-						IF @VP_INV_NO <> 'N/F' AND @VP_PRECIO_CUS_PART_NO = 0
-							SET @VP_PRECIO_CUS_PART_NO = 0
-						ELSE
-						INSERT INTO	#SALIDA_MATERIAL_MHI(
-															PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO, NET_AREA,
-															DIA, PACKING, QTY, MOUNT, PRECIO, INVOICE
-														)
-												VALUES(
-															@VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_NET_AREA,
-															@VP_CDATE, @VP_PACKING_NO, @VP_QTY, @VP_AMOUNT, @VP_PRECIO_CUS_PART_NO, @VP_PACKING_ORIGINAL
-														)
+		--				---- ////////////////////////////////////////////////
+		--				IF @VP_INV_NO <> 'N/F' AND @VP_PRECIO_CUS_PART_NO = 0
+		--					SET @VP_PRECIO_CUS_PART_NO = 0
+		--				ELSE
+		--				INSERT INTO	#SALIDA_MATERIAL_MHI(
+		--													PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO, NET_AREA,
+		--													DIA, PACKING, QTY, MOUNT, PRECIO, INVOICE
+		--												)
+		--										VALUES(
+		--													@VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_NET_AREA,
+		--													@VP_CDATE, @VP_PACKING_NO, @VP_QTY, @VP_AMOUNT, @VP_PRECIO_CUS_PART_NO, @VP_PACKING_ORIGINAL
+		--												)
 			
-						FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
-					END
+		--				FETCH NEXT FROM CU_SALIDA_MATERIAL_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
+		--			END
 
-					DECLARE @VP_TOTAL_QTY INT = 0
-					SELECT @VP_TOTAL_QTY = SUM(CONVERT(INT, ISNULL(QTY, '0'))) 
-					FROM #SALIDA_MATERIAL_MHI AS SALIDA
-					WHERE CUS_PART_NO = @VP_CUS_PART_NO
+		--			DECLARE @VP_TOTAL_QTY INT = 0
+		--			SELECT @VP_TOTAL_QTY = SUM(CONVERT(INT, ISNULL(QTY, '0'))) 
+		--			FROM #SALIDA_MATERIAL_MHI AS SALIDA
+		--			WHERE CUS_PART_NO = @VP_CUS_PART_NO
 					
-					IF @VP_TOTAL_QTY IS NULL
-						SET @VP_TOTAL_QTY = 0
+		--			IF @VP_TOTAL_QTY IS NULL
+		--				SET @VP_TOTAL_QTY = 0
 
-					UPDATE #SALIDA_MATERIAL_MHI
-						SET ACUMULADO = @VP_TOTAL_QTY
-					WHERE CUS_PART_NO = @VP_CUS_PART_NO
+		--			UPDATE #SALIDA_MATERIAL_MHI
+		--				SET ACUMULADO = @VP_TOTAL_QTY
+		--			WHERE CUS_PART_NO = @VP_CUS_PART_NO
 					 
-				-- ////////////////////SE CIERRA EL CURSOR//////////////////////////
-				CLOSE CU_SALIDA_MATERIAL_X_DIA
-				DEALLOCATE CU_SALIDA_MATERIAL_X_DIA									
+		--		-- ////////////////////SE CIERRA EL CURSOR//////////////////////////
+		--		CLOSE CU_SALIDA_MATERIAL_X_DIA
+		--		DEALLOCATE CU_SALIDA_MATERIAL_X_DIA									
 
-				FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL				
-			END
+		--		FETCH NEXT FROM CU_SALIDA_MATERIAL INTO @VP_PROD_CAT_DESC_PRINCIPAL, @VP_TYPE_PRINCIPAL, @VP_CUS_PART_NO_PRINCIPAL				
+		--	END
 			
-		-- ////////////////////SE CIERRA EL CURSOR//////////////////////////
-		CLOSE CU_SALIDA_MATERIAL
-		DEALLOCATE CU_SALIDA_MATERIAL
+		---- ////////////////////SE CIERRA EL CURSOR//////////////////////////
+		--CLOSE CU_SALIDA_MATERIAL
+		--DEALLOCATE CU_SALIDA_MATERIAL
 
 			-- //////////////SE CREA EL CURSOR PARA RECORRER LA TABLA DE INVENTARIO/////////////////////////////
 		DECLARE CU_SALIDA_MATERIAL_V3 CURSOR 
 		FOR SELECT	DISTINCT LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)), 
 				LTRIM(RTRIM(COLOR)), 
-				--LTRIM(RTRIM(item_desc_1)), 
 				LTRIM(RTRIM(INVENTARIO_EMBARQUE.cus_part_no)) AS CUS_PART_NO
 			FROM INVENTARIO_EMBARQUE 
-			-- ===========================
-			--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(IMITMIDX_SQL.item_no)) = LTRIM(RTRIM(COLOR))
-			--		AND SUBSTRING(LTRIM(RTRIM(IMITMIDX_SQL.item_no)),1,1) = 'F'
 			-- ===========================
 			WHERE CONVERT(DATE,F_INVENTARIO_EMBARQUE) >= @PP_F_INICIO
 			AND CONVERT(DATE,F_INVENTARIO_EMBARQUE) <= @PP_F_FIN	
 			AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = @PP_PROGRAMA
 			AND LTRIM(RTRIM(COLOR)) = @PP_COLOR
-			--AND LTRIM(RTRIM(item_desc_1)) = @PP_COLOR
 			AND K_ESTATUS_INVENTARIO_EMBARQUE IN (3,4)
 			ORDER BY	LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)), 
 						LTRIM(RTRIM(COLOR)),
-						--LTRIM(RTRIM(item_desc_1)),
 						LTRIM(RTRIM(INVENTARIO_EMBARQUE.cus_part_no)) ASC
 			SET NOCOUNT ON
 		
@@ -292,7 +286,6 @@ AS
 				FOR SELECT	 CONVERT(DATE,F_INVENTARIO_EMBARQUE) CDATE, 
 							LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) AS PROD_CAT_DESC, 
 							LTRIM(RTRIM(COLOR)) AS TYPE, 
-							--LTRIM(RTRIM(item_desc_1)) AS TYPE, 
 							LTRIM(RTRIM(INVENTARIO_EMBARQUE.ITEM_NO)) AS PART_NO, 
 							LTRIM(RTRIM(INVENTARIO_EMBARQUE.CUS_PART_NO)) AS CUS_PART_NO, 
 							SUM(qty) AS QTY, 
@@ -300,23 +293,18 @@ AS
 								ELSE ISNULL(LTRIM(RTRIM(INVENTARIO_EMBARQUE.INVOICE_NO)), '') END AS PACKING_NO ,
 							ISNULL(LTRIM(RTRIM(INVENTARIO_EMBARQUE.INVOICE_NO)), 'N/F') AS INV_NO
 					FROM INVENTARIO_EMBARQUE 
-					--INNER JOIN IMITMIDX_SQL ON LTRIM(RTRIM(IMITMIDX_SQL.item_no)) = LTRIM(RTRIM(COLOR))
-					--AND SUBSTRING(LTRIM(RTRIM(IMITMIDX_SQL.item_no)), 1,1) = 'F'
 					WHERE	CONVERT(DATE,F_INVENTARIO_EMBARQUE) >= @PP_F_INICIO
 					AND CONVERT(DATE,F_INVENTARIO_EMBARQUE) <= @PP_F_FIN	
 					AND K_ESTATUS_INVENTARIO_EMBARQUE IN (3,4)
 					AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.CUS_PART_NO)) = @VP_CUS_PART_NO_PRINCIPAL
 					AND LTRIM(RTRIM(COLOR)) = @VP_TYPE_PRINCIPAL
-					--AND LTRIM(RTRIM(item_desc_1)) = @VP_TYPE_PRINCIPAL
 					AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = @VP_PROD_CAT_DESC_PRINCIPAL
 					GROUP BY	CONVERT(DATE,F_INVENTARIO_EMBARQUE), LTRIM(RTRIM(INVENTARIO_EMBARQUE.ITEM_NO)), LTRIM(RTRIM(INVENTARIO_EMBARQUE.CUS_PART_NO)), 
 								LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)),  LTRIM(RTRIM(INVENTARIO_EMBARQUE.PACKING_NO)), 
 								LTRIM(RTRIM(INVENTARIO_EMBARQUE.INVOICE_NO)), 
 								LTRIM(RTRIM(COLOR))
-								--LTRIM(RTRIM(item_desc_1))
 					ORDER BY	
 								LTRIM(RTRIM(COLOR)), 
-								--LTRIM(RTRIM(item_desc_1)), 
 								LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)), 
 								CONVERT(DATE,F_INVENTARIO_EMBARQUE), LTRIM(RTRIM(INVENTARIO_EMBARQUE.PACKING_NO)), LTRIM(RTRIM(INVENTARIO_EMBARQUE.INVOICE_NO)),
 								LTRIM(RTRIM(INVENTARIO_EMBARQUE.ITEM_NO)), LTRIM(RTRIM(INVENTARIO_EMBARQUE.CUS_PART_NO)) ASC
@@ -329,7 +317,8 @@ AS
 				WHILE @@FETCH_STATUS = 0
 					BEGIN
 						-- ///////////SE INICIALIZAN LAS VARIABLES/////////////////////////////////////
-						SET @VP_PACKING_ORIGINAL  = @VP_PACKING_NO
+						--SET @VP_PACKING_ORIGINAL  = @VP_PACKING_NO
+						DECLARE @VP_PACKING_ORIGINAL VARCHAR(50) = @VP_PACKING_NO
 
 						SET @VP_TOTAL_INV_NO = 0
 						SET @VP_AMOUNT = ''
@@ -345,7 +334,6 @@ AS
 								FROM OELINHST_SQL 
 								WHERE inv_no = @VP_INV_NO
 								AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
-								--AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
 								SET NOCOUNT ON
 
 								SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
@@ -353,24 +341,23 @@ AS
 								SELECT @VP_PACKING_ORIGINAL = PACKING_NO 
 								FROM INVENTARIO_EMBARQUE 
 								WHERE INVOICE_NO = @VP_INV_NO 
-
 							END								
 
 						-- /////////SE OBTIENE EL PRECIO DEL NUMERO DE PARTE///////////////////////////////////////
-						SET @VP_PRECIO_CUS_PART_NO  = 0
+						--SET @VP_PRECIO_CUS_PART_NO  = 0
+						DECLARE @VP_PRECIO_CUS_PART_NO DECIMAL(13,2) = 0
+
 						IF @VP_INV_NO <> 'N/F'
 							BEGIN
 								SELECT @VP_PRECIO_CUS_PART_NO = Unit_price
 								FROM OELINHST_SQL 
 								WHERE inv_no = @VP_INV_NO
 								AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
-								--AND  LTRIM(RTRIM(item_desc_2)) = @VP_TYPE
 								AND LTRIM(RTRIM(CUS_ITEM_NO)) = @VP_CUS_PART_NO
 								SET NOCOUNT ON
 
 								IF @VP_PRECIO_CUS_PART_NO IS NULL 
 									SET @VP_PRECIO_CUS_PART_NO = 0
-
 							END
 						ELSE
 							BEGIN
@@ -390,19 +377,21 @@ AS
 						IF @VP_INV_NO <> 'N/F' AND @VP_PRECIO_CUS_PART_NO = 0
 							SET @VP_PRECIO_CUS_PART_NO = 0
 						ELSE
-						INSERT INTO	#SALIDA_MATERIAL_MHI(
-															PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO, NET_AREA,
-															DIA, PACKING, QTY, MOUNT, PRECIO, INVOICE
-														)
-												VALUES(
-															@VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_NET_AREA,
-															@VP_CDATE, @VP_PACKING_NO, @VP_QTY, @VP_AMOUNT, @VP_PRECIO_CUS_PART_NO, @VP_PACKING_ORIGINAL
-														)
+							INSERT INTO	#SALIDA_MATERIAL_MHI(
+																PROD_CAT_DESC, TYPE, PART_NO, CUS_PART_NO, NET_AREA,
+																DIA, PACKING, QTY, MOUNT, PRECIO, INVOICE
+															)
+													VALUES(
+																@VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_NET_AREA,
+																@VP_CDATE, @VP_PACKING_NO, @VP_QTY, @VP_AMOUNT, @VP_PRECIO_CUS_PART_NO, @VP_PACKING_ORIGINAL
+															)
 			
 						FETCH NEXT FROM CU_SALIDA_MATERIAL_V3_X_DIA INTO @VP_CDATE, @VP_PROD_CAT_DESC, @VP_TYPE, @VP_PART_NO, @VP_CUS_PART_NO, @VP_QTY, @VP_PACKING_NO, @VP_INV_NO			
 					END
 
-					SET @VP_TOTAL_QTY  = 0
+					--SET @VP_TOTAL_QTY  = 0
+					DECLARE @VP_TOTAL_QTY INT = 0
+
 					SELECT @VP_TOTAL_QTY = SUM(CONVERT(INT, ISNULL(QTY, '0'))) 
 					FROM #SALIDA_MATERIAL_MHI AS SALIDA
 					WHERE CUS_PART_NO = @VP_CUS_PART_NO
@@ -440,7 +429,6 @@ AS
 				DECLARE @cols1 AS NVARCHAR(MAX), @query1 AS NVARCHAR(MAX), @query AS NVARCHAR(MAX), @query2 AS NVARCHAR(MAX), @query3 AS NVARCHAR(MAX)
 				select @cols1 = STUFF(( SELECT ',' + QUOTENAME(PACKING) 
 										FROM #SALIDA_MATERIAL_MHI 
-										--WHERE TYPE = 'CHRYSLER NAPPA DX9'
 										GROUP BY DIA,PACKING
 										ORDER BY DIA,PACKING
 										FOR XML PATH(''), TYPE ).value('.', 'NVARCHAR(MAX)') ,1,1,'' ) 									 										 			
@@ -498,10 +486,8 @@ AS
 				SELECT	@VP_TOTAL_FACTURA = SUM(qty_to_ship * unit_price)
 				FROM OELINHST_SQL 
 				WHERE INV_NO IN (	SELECT DISTINCT PACKING FROM #SALIDA_MATERIAL_MHI
-									WHERE --TYPE = 'CHRYSLER NAPPA DX9'
-									--AND 
-									PACKING NOT LIKE '%-%' )
-				AND LTRIM(RTRIM(item_desc_2)) = @PP_COLOR
+									WHERE PACKING NOT LIKE '%-%' )
+				AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @PP_COLOR
 				 SET NOCOUNT ON
 
 				IF @VP_TOTAL_FACTURA IS NULL 
@@ -511,13 +497,6 @@ AS
 				UPDATE [tempdb].[dbo].[TOTALES]
 					SET ACUMULADO = @VP_TOTAL_FACTURA
 				WHERE PART_NO = 'AMOUNT'
-				SET NOCOUNT ON
-
-				-- //////////SE OBTIENE EL COLOR DEL NUMERO DE PARTE//////////////////////////////////////
-				DECLARE @VP_COLOR VARCHAR(50) = ''
-				SELECT TOP 1 @VP_COLOR = LTRIM(RTRIM(PART_NO)) 
-				FROM #SALIDA_MATERIAL_MHI 
-				--WHERE TYPE = 'CHRYSLER NAPPA DX9'
 				SET NOCOUNT ON
 										
 				-- //////////SE CREA TABLA TEMPORAL PARA OBTENER DATOS DEL CORTE DEL COLOR//////////////////////////////////////
@@ -539,7 +518,7 @@ AS
 				        FROM cccuthst_sql INNER JOIN ccjobhst_sql ON cccuthst_sql.jobno = ccjobhst_sql.jobno
 							WHERE	ccjobhst_sql.datecompleted >=[dbo].[CONVERT_DATE_TO_INT](@PP_F_INICIO,'yyyyMMdd') 
 						AND		ccjobhst_sql.datecompleted <= [dbo].[CONVERT_DATE_TO_INT](@PP_F_FIN,'yyyyMMdd') 
-				AND		LTRIM(RTRIM(cccuthst_sql.colour)) = CONCAT('F', SUBSTRING(@VP_COLOR, LEN(@VP_COLOR) -5 ,6 ))
+				AND		LTRIM(RTRIM(cccuthst_sql.colour)) = @PP_COLOR
 				AND cccuthst_sql.hidesqm <> 0
 				SET NOCOUNT ON
 
