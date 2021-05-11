@@ -124,7 +124,8 @@ AS
 							BEGIN
 								DECLARE @VP_HORSE INT = 1
 
-								IF @VP_TYPE_ANTERIOR = @VP_TYPE AND @VP_PLOT_ANTERIOR = @VP_PLOT
+								--IF @VP_TYPE_ANTERIOR = @VP_TYPE AND @VP_PLOT_ANTERIOR = @VP_PLOT
+								IF @VP_TDATE_ANTERIOR = @VP_TDATE AND @VP_PLOT_ANTERIOR = @VP_PLOT
 									BEGIN
 										SET @VP_PLOT_CONTADOR = @VP_PLOT_CONTADOR + 1
 										SET @VP_HORSE = @VP_PLOT_CONTADOR
@@ -134,9 +135,29 @@ AS
 										SET @VP_PLOT_CONTADOR	= 1
 									END
 
-								IF @VP_TYPE_ANTERIOR <> @VP_TYPE
+								--IF @VP_TYPE_ANTERIOR <> @VP_TYPE
+								--	BEGIN
+								--		SET @VP_PLOT_CONTADOR	= 1
+								--		DECLARE @VP_TOTAL_HIDE	INT = 0
+								--		DECLARE @VP_TOTAL_SQF	DECIMAL(13,2) = 0
+
+								--		-- ////////////////////SE OBTINEN LOS TOTALES DE ESE TIPO//////////////////////////	
+								--		SELECT	@VP_TOTAL_HIDE	= SUM(CONVERT(INT, LTRIM(RTRIM(THIDES)))),
+								--				@VP_TOTAL_SQF	= SUM(CONVERT(DECIMAL(13,2), LTRIM(RTRIM(TAREA))))
+								--		FROM HIDESHDR_SQL   
+								--		WHERE LTRIM(RTRIM(TDATE)) =  @VP_TDATE_ANTERIOR
+								--		AND LTRIM(RTRIM(TYPE)) = @VP_TYPE_ANTERIOR
+
+								--		-- ////////////////////SE INGRESA EL REGISTRO EN @VP_ENTRADA_PIEL_MHI_TBL//////////////////////////	
+								--		INSERT INTO @VP_ENTRADA_PIEL_MHI_TBL
+								--			SELECT	'19990101', '', '', 
+								--					'', '', 
+								--					'Total Tipo por Dia:', @VP_TOTAL_HIDE, @VP_TOTAL_SQF, '',
+								--					'', '', ''
+								--	END
+
+								IF @VP_TDATE_ANTERIOR <> @VP_TDATE
 									BEGIN
-										SET @VP_PLOT_CONTADOR	= 1
 										DECLARE @VP_TOTAL_HIDE	INT = 0
 										DECLARE @VP_TOTAL_SQF	DECIMAL(13,2) = 0
 
@@ -145,7 +166,8 @@ AS
 												@VP_TOTAL_SQF	= SUM(CONVERT(DECIMAL(13,2), LTRIM(RTRIM(TAREA))))
 										FROM HIDESHDR_SQL   
 										WHERE LTRIM(RTRIM(TDATE)) =  @VP_TDATE_ANTERIOR
-										AND LTRIM(RTRIM(TYPE)) = @VP_TYPE_ANTERIOR
+										AND		LTRIM(RTRIM(PCOLOR)) = @VP_COLOR_PEARL
+										--AND LTRIM(RTRIM(TYPE)) = @VP_TYPE_ANTERIOR
 
 										-- ////////////////////SE INGRESA EL REGISTRO EN @VP_ENTRADA_PIEL_MHI_TBL//////////////////////////	
 										INSERT INTO @VP_ENTRADA_PIEL_MHI_TBL
@@ -153,10 +175,7 @@ AS
 													'', '', 
 													'Total Tipo por Dia:', @VP_TOTAL_HIDE, @VP_TOTAL_SQF, '',
 													'', '', ''
-									END
 
-								IF @VP_TDATE_ANTERIOR <> @VP_TDATE
-									BEGIN
 											-- ////////////////////SE INGRESA EL REGISTRO EN @VP_ENTRADA_PIEL_MHI_TBL//////////////////////////	
 										INSERT INTO @VP_ENTRADA_PIEL_MHI_TBL
 											SELECT	'19990101', CONCAT('Dia: ', dbo.CONVERT_INT_TO_DATE(CONVERT(INT,@VP_TDATE))), '', 
@@ -205,7 +224,8 @@ AS
 						@VP_TOTAL_SQF	= SUM(CONVERT(DECIMAL(13,2),TAREA))
 				FROM HIDESHDR_SQL   
 				WHERE LTRIM(RTRIM(TDATE)) =  @VP_TDATE --dbo.CONVERT_INT_TO_DATE(CONVERT(INT,LDATE)) =  @PP_F_INICIO
-				AND LTRIM(RTRIM(TYPE)) = @VP_TYPE_ANTERIOR
+				AND		LTRIM(RTRIM(PCOLOR)) = @VP_COLOR_PEARL
+				--AND LTRIM(RTRIM(TYPE)) = @VP_TYPE_ANTERIOR
 
 				-- ////////////////////SE INGRESA EL REGISTRO DEL ULTIMO TIPO EN @VP_ENTRADA_PIEL_MHI_TBL//////////////////////////	
 				INSERT INTO @VP_ENTRADA_PIEL_MHI_TBL
