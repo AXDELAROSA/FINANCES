@@ -47,19 +47,22 @@ AS
 	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 	AND		K_PO_TEMPORAL=@PP_K_PO_TEMPORAL
 
-	-- =============================
-	IF @VP_RESULTADO=''
+	IF @PP_K_USUARIO_ACCION	IN (57,139)
+	BEGIN
+		IF @VP_STATUS_PO > 6
+			SET @VP_RESULTADO =  'No es posible modificar la [PO], Verifique...' 
+	END
+	ELSE
+	BEGIN	
+		---- =============================
 	-- SÓLO EN ESTOS ESTADOS SE PUEDE MODIFICAR UNA ORDEN DE COMRPA, ESTATUS DE RECHAZO Y DE CREADA.
 		IF @VP_STATUS_PO NOT IN (1, 3, 5, 8,13)
 			SET @VP_RESULTADO =  'No es posible modificar la [PO], Verifique...' 
-	--IF @VP_RESULTADO=''
-	--	IF @VP_N_FACTURA_X_PURCHASE_ORDER>0
-	--		SET @VP_RESULTADO =  'There are [INVOICE] assigned.' 		
+	END
 	-- /////////////////////////////////////////////////////
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
 	-- /////////////////////////////////////////////////////
 GO
-
 
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> RN_BORRABLE
