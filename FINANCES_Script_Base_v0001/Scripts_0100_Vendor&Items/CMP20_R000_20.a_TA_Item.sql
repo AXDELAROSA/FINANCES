@@ -521,6 +521,31 @@ GO
 -- DROP CONSTRAINT [FK_UNIT_OF_ITEM_03]
 
 
+
+-- ////////////////////////////////////////////////////////////////
+-- //					ITEM_INACTIVO				AX: 20210519
+-- ////////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ITEM_INACTIVO]') AND type in (N'U'))
+	DROP TABLE [dbo].[ITEM_INACTIVO]
+GO
+CREATE TABLE [dbo].[ITEM_INACTIVO] (
+	[K_ITEM_INACTIVO]				[INT] IDENTITY (1,1),
+	 -- ============================
+	[K_ITEM]						[INT] NOT NULL	
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[ITEM_INACTIVO]
+	ADD CONSTRAINT [PK_ITEM_INACTIVO]
+		PRIMARY KEY CLUSTERED ([K_ITEM_INACTIVO])
+GO
+-- //////////////////////////////////////////////////////
+ALTER TABLE [dbo].[ITEM_INACTIVO] 
+	ADD		[K_USUARIO_ALTA]			[INT] NOT NULL,
+			[F_ALTA]					[DATETIME] NOT NULL,
+			[K_USUARIO_CAMBIO]			[INT] NOT NULL,
+			[F_CAMBIO]					[DATETIME] NOT NULL
+GO
+
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////
