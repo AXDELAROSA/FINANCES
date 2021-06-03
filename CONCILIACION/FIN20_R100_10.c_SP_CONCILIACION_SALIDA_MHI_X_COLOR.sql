@@ -139,6 +139,9 @@ AS
 								FROM OELINHST_SQL 
 								WHERE inv_no = @VP_INV_NO
 								AND CONCAT('F', RIGHT(LTRIM(RTRIM(ITEM_NO)),6))  = @VP_TYPE
+								AND prod_cat = (	SELECT TOP 1  PROD_CAT
+													FROM IMCATFIL_SQL 
+													WHERE  PROD_CAT_DESC = @PP_PROGRAMA )
 								SET NOCOUNT ON
 
 								SET @VP_AMOUNT =  CONVERT(VARCHAR(15),@VP_TOTAL_INV_NO)
