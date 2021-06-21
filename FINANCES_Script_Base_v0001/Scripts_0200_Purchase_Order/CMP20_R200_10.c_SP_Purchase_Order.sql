@@ -2741,9 +2741,9 @@ BEGIN TRY
 				SET @VP_PO_INT = CAST(@VP_VALOR_PO AS INT)
 				SET @VP_TM_INT = CAST(@VP_VALOR_TM AS INT)
 
-				EXECUTE [PG_PR_ENVIAR CORREO_FINANZAS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
+				EXECUTE [PG_PR_ENVIAR_CORREO_FINANZAS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
 				
-				EXECUTE [PG_PR_ENVIAR CORREO_USUARIOS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
+				EXECUTE [PG_PR_ENVIAR_CORREO_USUARIOS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
 			END
 
 			--Reemplazamos lo procesado con nada con la funcion stuff
@@ -2765,7 +2765,7 @@ END CATCH
 -- /////////////////////////////////////////////////////////////////////	
 	IF @VP_MENSAJE<>''
 	BEGIN
-		SET		@VP_MENSAJE = 'No es poesible [ACTUALIZAR] el [STATUS_PO]: ' + @VP_MENSAJE 
+		SET		@VP_MENSAJE = 'No es posible [ACTUALIZAR] el [STATUS_PO]: ' + @VP_MENSAJE 
 	END
 	SELECT	@VP_MENSAJE AS MENSAJE, @VP_VALOR_PO AS CLAVE
 	-- //////////////////////////////////////////////////////////////
@@ -2775,11 +2775,11 @@ GO
 -- // STORED PROCEDURE ---> ENVIAR CORREO
 -- // CUANDO LA ORDEN DE COMPRA ES APROBADA POR GERENCIA DE PLANTA SE HACE EL ENVIO DE LA [PO] POR MEDIO ELECTRONICO.
 -- //////////////////////////////////////////////////////////////
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR CORREO_FINANZAS]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_FINANZAS]
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]
 GO
---		 EXECUTE [dbo].[PG_PR_ENVIAR CORREO_FINANZAS]	0,139,  2
-CREATE PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_FINANZAS]
+--		 EXECUTE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]	0,139,  2
+CREATE PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
@@ -2848,12 +2848,12 @@ GO
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> ENVIAR CORREO
 -- // PARA ENVIAR CORREO A LOS USUARIOS QUE GENERARON LA ORDEN DE COMPRA.
--- //////////////////////////////////////////////////////////////
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR CORREO_USUARIOS]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_USUARIOS]
+-- //////////////////////////////////////////////////////////////	
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR_CORREO_USUARIOS]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_USUARIOS]
 GO
---		 EXECUTE [dbo].[PG_PR_ENVIAR CORREO_USUARIOS]	0,139,  2
-CREATE PROCEDURE [dbo].[PG_PR_ENVIAR CORREO_USUARIOS]
+--		 EXECUTE [dbo].[PG_PR_ENVIAR_CORREO_USUARIOS]	0,139,  2
+CREATE PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_USUARIOS]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
 	-- ===========================
