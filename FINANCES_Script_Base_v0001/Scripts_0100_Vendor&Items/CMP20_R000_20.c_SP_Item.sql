@@ -7,7 +7,7 @@
 -- // CREATION DATE:	20200217
 -- ////////////////////////////////////////////////////////////// 
 
---USE [COMPRAS]
+USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
@@ -774,7 +774,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_UP_ITEM]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_UP_ITEM]
 GO
-
+--		 EXECUTE [dbo].[PG_UP_ITEM] 1,139,  168 , 1906 , 'SERVICIO DE ENVIO A CD. JUAREZ, CHIH.' , '' , '' , '' , '' , '1' , '30000' , 1 , 1 , 11 , 1 , 1 
 CREATE PROCEDURE [dbo].[PG_UP_ITEM]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
