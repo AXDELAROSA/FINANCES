@@ -78,11 +78,11 @@ AS
 		
 			IF @VP_PENDIENTES>0
 				BEGIN
-					SET @VP_MENSAJE='Existen [ORDENES DE COMPRA] por autorizar!!!!'
+					SET @VP_MENSAJE = 'Existen [ORDENES DE COMPRA] por autorizar. Da click aquí par ingresar a la pantalla.'
 				END
 		END
 	END
-	SELECT  @VP_MENSAJE AS MENSAJE
+	SELECT  @VP_MENSAJE AS MENSAJE, 'COMPRAS' AS TITULO_UDA
 	-- ////////////////////////////////////////////////////////////////////
 GO
 
