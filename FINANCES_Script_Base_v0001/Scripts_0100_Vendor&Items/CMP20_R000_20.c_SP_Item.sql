@@ -11,9 +11,19 @@ USE [COMPRAS]
 GO
 
 -- //////////////////////////////////////////////////////////////
--- SELECT * FROM ITEM
--- SELECT * FROM CURRENCY
--- SELECT * FROM ITEM
+-- ///////////////////	CONTENIDO DEL SP
+--	[PG_LI_ITEM]
+--	[PG_LI_ITEM_PO]
+--	[PG_LI_ITEM_PO_PRICE_LOG]
+--	[PG_SK_ITEM]
+--	[PG_IN_LOG_PRECIOS_ITEM_NUEVOS]
+--	[PG_IN_LOG_PRECIOS_ITEM_MODIFICADOS]
+--	[PG_IN_ITEM]
+--	[PG_IN_ITEM_PARA_MASTER]
+--	[PG_UP_ITEM_SIN_REGISTROS_PO]
+--	[PG_UP_ITEM]
+--	[PG_UP_ITEM_PARA_MASTER]
+--	[PG_DL_ITEM]
 -- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> SELECT / LISTADO
 -- //////////////////////////////////////////////////////////////
