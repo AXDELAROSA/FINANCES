@@ -79,11 +79,20 @@ AS
 		-- ===========================
 		WHERE CONVERT(DATE,F_INVENTARIO_EMBARQUE) >= @PP_F_INICIO
 		AND CONVERT(DATE,F_INVENTARIO_EMBARQUE) <= @PP_F_FIN	
-		AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = ( CASE WHEN  @PP_PROGRAMA = 'WK CJ CAPRI' THEN '2017 WK CJ'
-																WHEN @PP_PROGRAMA = 'WK GLDL' THEN 'WK JEEP GL DL' 
-																WHEN @PP_PROGRAMA = 'WK CJ CAPRI' THEN '2017 WK CJ' 
-																WHEN @PP_PROGRAMA = '2018 WK YL' THEN 'WK YL' 
-															ELSE @PP_PROGRAMA END ) 
+		AND ( CASE WHEN LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = 'WK-EL RESERVE' THEN 'WK EL RESERVE' 
+								WHEN LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = 'WK GLDL' THEN 'WK JEEP GL DL' 
+								WHEN LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = 'WK CJ CAPRI' THEN '2017 WK CJ' 
+								WHEN LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = '2018 WK YL' THEN 'WK YL' 
+							ELSE LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) END ) = (CASE WHEN  @PP_PROGRAMA = 'WK-EL RESERVE' THEN 'WK EL RESERVE' 
+																							WHEN @PP_PROGRAMA = 'WK GLDL' THEN 'WK JEEP GL DL' 
+																							WHEN @PP_PROGRAMA = 'WK CJ CAPRI' THEN '2017 WK CJ' 
+																							WHEN @PP_PROGRAMA = '2018 WK YL' THEN 'WK YL' 
+																						ELSE @PP_PROGRAMA END) 
+		--AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = ( CASE WHEN  @PP_PROGRAMA = 'WK CJ CAPRI' THEN '2017 WK CJ'
+		--														WHEN @PP_PROGRAMA = 'WK GLDL' THEN 'WK JEEP GL DL' 
+		--														WHEN @PP_PROGRAMA = 'WK CJ CAPRI' THEN '2017 WK CJ' 
+		--														WHEN @PP_PROGRAMA = '2018 WK YL' THEN 'WK YL' 
+		--													ELSE @PP_PROGRAMA END ) 
 		--AND LTRIM(RTRIM(INVENTARIO_EMBARQUE.D_PROD_CAT)) = @PP_PROGRAMA
 		AND LTRIM(RTRIM(COLOR)) = @PP_COLOR
 		AND K_ESTATUS_INVENTARIO_EMBARQUE IN (3,4)
@@ -186,11 +195,13 @@ AS
 										WHEN prod_cat = 'PWU' THEN 'WKJ' 
 										WHEN prod_cat = 'WYL' THEN 'WKY' 
 										WHEN prod_cat = 'PWZ' THEN 'WKZ' 
+										WHEN prod_cat = 'PWL' THEN 'WKL' 
 							ELSE prod_cat END )  =  ( CASE WHEN  @PP_PROGRAMA = 'WK-EL RESERVE' THEN 'WEL' 
 																										WHEN @PP_PROGRAMA = 'WK GLDL' THEN 'WKG' 
 																										WHEN @PP_PROGRAMA = 'WK CJ CAPRI' THEN 'WKJ' 
 																										WHEN @PP_PROGRAMA = '2018 WK YL' THEN 'WKY'
-																										WHEN @PP_PROGRAMA = 'WK DZ-SRT' THEN 'WKZ'  
+																										WHEN @PP_PROGRAMA = 'WK DZ-SRT' THEN 'WKZ'
+																										WHEN @PP_PROGRAMA = '2015 WK KL' THEN 'WKL' 
 																										ELSE ( SELECT TOP 1  PROD_CAT
 																												FROM IMCATFIL_SQL 
 																												WHERE  PROD_CAT_DESC = @PP_PROGRAMA) END )
@@ -360,11 +371,13 @@ AS
 						WHEN prod_cat = 'PWU' THEN 'WKJ' 
 						WHEN prod_cat = 'WYL' THEN 'WKY' 
 						WHEN prod_cat = 'PWZ' THEN 'WKZ' 
+						WHEN prod_cat = 'PWL' THEN 'WKL' 
 						ELSE prod_cat END )  =  ( CASE WHEN  @PP_PROGRAMA = 'WK-EL RESERVE' THEN 'WEL' 
 														WHEN @PP_PROGRAMA = 'WK GLDL' THEN 'WKG' 
 														WHEN @PP_PROGRAMA = 'WK CJ CAPRI' THEN 'WKJ' 
 														WHEN @PP_PROGRAMA = '2018 WK YL' THEN 'WKY'
-														WHEN @PP_PROGRAMA = 'WK DZ-SRT' THEN 'WKZ'  
+														WHEN @PP_PROGRAMA = 'WK DZ-SRT' THEN 'WKZ' 
+														WHEN @PP_PROGRAMA = '2015 WK KL' THEN 'WKL' 
 														ELSE ( SELECT TOP 1  PROD_CAT
 																FROM IMCATFIL_SQL 
 																	WHERE  PROD_CAT_DESC = @PP_PROGRAMA) END )
