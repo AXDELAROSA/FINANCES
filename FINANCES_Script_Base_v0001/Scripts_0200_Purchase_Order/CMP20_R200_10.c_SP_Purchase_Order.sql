@@ -2133,7 +2133,7 @@ DECLARE  @VP_MENSAJE				NVARCHAR(MAX) = ''
 BEGIN TRANSACTION 
 BEGIN TRY
 	-- /////////////////////////////////////////////////////////////////////
-	--EXECUTE [dbo].[PG_RN_PURCHASE_ORDER_UPDATE]		@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
+	--EXECUTE [dbo].[PG_RN_PURCHASE_ORDER_UPDATE]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION,
 	--												@PP_K_HEADER_PURCHASE_ORDER, @PP_K_PO_TEMPORAL,
 	--												@OU_RESULTADO_VALIDACION = @VP_MENSAJE		OUTPUT
 	-- /////////////////////////////////////////////////////////////////////
@@ -2153,7 +2153,7 @@ BEGIN TRY
 				-- ============================	= -- ============================
 				[F_CAMBIO]						= @PP_F_INIT, 
 				[K_USUARIO_CAMBIO]				= @PP_K_USUARIO_ACCION
-		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
+		WHERE	[K_HEADER_PURCHASE_ORDER]		= @PP_K_HEADER_PURCHASE_ORDER
 		AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
 		IF @@ROWCOUNT = 0
 		BEGIN
