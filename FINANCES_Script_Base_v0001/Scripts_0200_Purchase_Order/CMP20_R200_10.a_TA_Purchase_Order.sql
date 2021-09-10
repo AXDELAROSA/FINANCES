@@ -429,6 +429,15 @@ GO
 -- 	ADD		[TOTAL_PURCHASE_ORDER_CLOSED]	[DECIMAL] (10,4) NOT NULL DEFAULT 0		-- AX - 20200916
 -- GO		
 
+-- ALTER TABLE [dbo].[HEADER_PURCHASE_ORDER]														
+-- 	ADD		[L_RETENTION]				[INT] NOT NULL DEFAULT 0		-- AX - 20210903
+-- GO		
+-- ALTER TABLE [dbo].[HEADER_PURCHASE_ORDER]									
+-- 	ADD		[ISR_RETEN]					[DECIMAL] (10,4) NOT NULL DEFAULT 0		-- AX - 20210903
+-- GO		
+-- ALTER TABLE [dbo].[HEADER_PURCHASE_ORDER]									
+-- 	ADD		[IVA_RETEN]					[DECIMAL] (10,4) NOT NULL DEFAULT 0		-- AX - 20210903
+-- GO		
 -- ////////////////////////////////////////////////////////////////
 -- //					DETAILS_PURCHASE_ORDER				 
 -- ////////////////////////////////////////////////////////////////
