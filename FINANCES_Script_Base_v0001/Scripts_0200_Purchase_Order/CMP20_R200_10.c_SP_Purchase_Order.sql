@@ -2913,7 +2913,7 @@ AS
 		
 		EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
 --		@copy_recipients = 'ALEJANDROD@PEARLLEATHER.COM.MX',
---		@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
+		@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
 		@subject = @VP_SUBJECT,
 		@body = @VP_BODY_HTML,  
 		@body_format = 'HTML', 
