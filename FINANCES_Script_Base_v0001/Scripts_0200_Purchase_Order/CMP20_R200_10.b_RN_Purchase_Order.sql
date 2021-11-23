@@ -91,7 +91,7 @@ AS
 
 	-- =============================
 	-- SÓLO EN ESTOS ESTADOS SE PUEDE MODIFICAR UNA ORDEN DE COMRPA, ESTATUS DE RECHAZO Y DE CREADA.
-	IF @VP_STATUS_PO NOT IN (4,5,6,7,8,9,11)
+	IF @VP_STATUS_PO NOT IN (4,5,6,7,8,9,11,12)
 		SET @VP_RESULTADO =  'No es posible modificar la [PO], Verifique...' 
 	-- /////////////////////////////////////////////////////
 	SET @OU_RESULTADO_VALIDACION = @VP_RESULTADO
