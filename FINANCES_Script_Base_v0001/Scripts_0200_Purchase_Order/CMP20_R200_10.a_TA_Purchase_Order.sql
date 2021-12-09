@@ -14,6 +14,10 @@ GO
 -- //////////////////////////////////////////////////////////////
 -- // DROPs
 -- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[LOG_HEADER_PURCHASE_ORDER]') AND type in (N'U'))
+	DROP TABLE [dbo].[LOG_HEADER_PURCHASE_ORDER]
+GO
+
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[LOG_DETAILS_PURCHASE_ORDER]') AND type in (N'U'))
 	DROP TABLE [dbo].[LOG_DETAILS_PURCHASE_ORDER]
 GO
@@ -537,6 +541,28 @@ GO
 	--ALTER TABLE [dbo].[LOG_DETAILS_PURCHASE_ORDER]
 -- //////////////////////////////////////////////////////
 -----===========================================
+
+
+-- ////////////////////////////////////////////////////////////////
+-- //					LOG_HEADER_PURCHASE_ORDER				 
+-- ////////////////////////////////////////////////////////////////
+
+CREATE TABLE [dbo].[LOG_HEADER_PURCHASE_ORDER] (
+	[K_LOG_HEADER_PURCHASE_ORDER]			[INT] IDENTITY (1,1)	NOT NULL,
+	[K_HEADER_PURCHASE_ORDER]				[INT] NOT NULL,
+	[K_PO_TEMPORAL]							[INT] NOT NULL,
+	-- ============================
+	[K_STATUS_PO_ORIGINAL]					[INT] NOT NULL,
+	[D_STATUS_PURCHASE_ORDER_O]				[VARCHAR](500) NOT NULL DEFAULT '',
+	-- ============================
+	[K_STATUS_PO_FINAL]						[INT] NOT NULL,
+	[D_STATUS_PURCHASE_ORDER_F]				[VARCHAR](500) NOT NULL DEFAULT ''
+) ON [PRIMARY]
+GO
+-- //////////////////////////////////////////////////////
+ALTER TABLE [dbo].[LOG_HEADER_PURCHASE_ORDER]		ADD		
+	[K_USUARIO_ALTA]			[INT]		NOT NULL,
+	[F_ALTA]					[DATETIME]	NOT NULL;
 
 -- //////////////////////////////////////////////////////////////
 -- //////////////////////////////////////////////////////////////

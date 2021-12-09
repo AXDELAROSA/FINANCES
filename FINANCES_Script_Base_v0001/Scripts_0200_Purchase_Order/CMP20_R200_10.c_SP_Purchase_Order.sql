@@ -37,6 +37,7 @@ GO
 --	[PG_UP_ESTATUS_PO_MANAGER_DPTO]
 --	[PG_PR_ENVIAR_CORREO_FINANZAS]
 --	[PG_PR_ENVIAR_CORREO_USUARIOS]
+--	[PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]
 --	[PG_UP_ESTATUS_PO_SEND_PRINT]
 --	[PG_DL_HEADER_PURCHASE_ORDER]
 --	[PG_DL_DETAILS_LOG]
@@ -558,7 +559,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_LI_APPROVE_FINANCES]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_LI_APPROVE_FINANCES]
 GO															
---		 EXECUTE [dbo].[PG_LI_APPROVE_FINANCES] 0,139,1,'2020-08-08' , '2020-09-10'		11		-- FABIOLA
+--		 EXECUTE [dbo].[PG_LI_APPROVE_FINANCES] 0,139,1,'2020-08-08' , '2021-12-10'		11		-- FABIOLA
 --		 EXECUTE [dbo].[PG_LI_APPROVE_FINANCES] 0,69,1,'2020-08-08' , '2020-09-10'		11		-- MARIAS
 --		 EXECUTE [dbo].[PG_LI_APPROVE_FINANCES] 0,157,1,'2020-08-08' , '2020-09-10'		11		-- BERENICES
 --		 EXECUTE [dbo].[PG_LI_APPROVE_FINANCES] 0,47		2		-- MIKE
@@ -1621,11 +1622,11 @@ CREATE PROCEDURE [dbo].[PG_IN_COMENTARIOS_LOG_PO]
 	@PP_K_PO_TEMPORAL				[INT],
 	@PP_C_PO_COMENTARIO_LOG			[VARCHAR](255)
 AS			
-DECLARE @VP_MENSAJE				VARCHAR(500) = ''
-DECLARE @VP_K_HEADER_PURCHASE_ORDER			INT = 0;		
-DECLARE @VP_K_PO			INT = 0;		
-BEGIN TRANSACTION 
-BEGIN TRY
+DECLARE  @VP_MENSAJE					VARCHAR(500) = ''
+		,@VP_K_HEADER_PURCHASE_ORDER	INT = 0
+		,@VP_K_PO						INT = 0
+--BEGIN TRANSACTION 
+--BEGIN TRY
 -- /////////////////////////////////////////////////////////////////////
 		INSERT	INTO PO_COMENTARIO_LOG 
 		(	[K_HEADER_PURCHASE_ORDER]
@@ -1639,31 +1640,84 @@ BEGIN TRY
 			@PP_C_PO_COMENTARIO_LOG,
 			@PP_K_USUARIO_ACCION,
 			GETDATE()					)
+		IF @@ROWCOUNT = 0
+		BEGIN
+			--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+			SET @VP_MENSAJE='El comentario no fue ingresado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+			RAISERROR (@VP_MENSAJE, 16, 1 ) 
+		END				
+---- /////////////////////////////////////////////////////////////////////
+--COMMIT TRANSACTION 
+--END TRY
 
-			IF @@ROWCOUNT = 0
-				BEGIN
-					--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-					SET @VP_MENSAJE='El comentario no fue ingresado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
-					RAISERROR (@VP_MENSAJE, 16, 1 ) 
-				END				
--- /////////////////////////////////////////////////////////////////////
-COMMIT TRANSACTION 
-END TRY
+--BEGIN CATCH
+--	/* Ocurrió un error, deshacemos los cambios*/ 
+--	ROLLBACK TRANSACTION
+--	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
+--	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
+--	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
+--END CATCH	
+--	-- /////////////////////////////////////////////////////////////////////	
+--	IF @VP_MENSAJE<>''
+--	BEGIN
+--		SET		@VP_MENSAJE = 'No es posible [Insertar] el registro [COMMENT_HEADER_PURCHASE_ORDER]: ' + @VP_MENSAJE 
+--	END
+--	SELECT	@VP_MENSAJE AS MENSAJE, @PP_K_HEADER_PURCHASE_ORDER AS CLAVE
+--	-- //////////////////////////////////////////////////////////////
+GO
 
-BEGIN CATCH
-	/* Ocurrió un error, deshacemos los cambios*/ 
-	ROLLBACK TRANSACTION
-	DECLARE @VP_ERROR_TRANS NVARCHAR(4000);
-	SET @VP_ERROR_TRANS = ERROR_MESSAGE() 
-	SET @VP_MENSAJE = 'ERROR:// ' + @VP_ERROR_TRANS
-END CATCH	
-	-- /////////////////////////////////////////////////////////////////////	
-	IF @VP_MENSAJE<>''
+
+-- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> INSERT / FICHA
+-- // PARA INSERTAR LOG DE LOS CAMBIOS DE ESTATUS DE LA PO
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_IN_HEADER_LOG_PO]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_IN_HEADER_LOG_PO]
+GO
+CREATE PROCEDURE [dbo].[PG_IN_HEADER_LOG_PO]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_K_HEADER_PURCHASE_ORDER		[INT],
+	@PP_K_PO_TEMPORAL				[INT],
+	@PP_K_STATUS_PO_ORIGINAL		[INT],
+	@PP_K_STATUS_PO_FINAL			[INT]
+
+AS			
+DECLARE @VP_MENSAJE				VARCHAR(500) = ''
+
+
+	INSERT INTO	[LOG_HEADER_PURCHASE_ORDER] 
+	(	[K_HEADER_PURCHASE_ORDER]		,
+		[K_PO_TEMPORAL]					,
+		-- ============================
+		[K_STATUS_PO_ORIGINAL]			,
+		[D_STATUS_PURCHASE_ORDER_O]		,
+		-- ============================
+		[K_STATUS_PO_FINAL]				,
+		[D_STATUS_PURCHASE_ORDER_F]		,
+		-- ============================
+		[K_USUARIO_ALTA]				,
+		[F_ALTA]						)
+	VALUES	(
+		@PP_K_HEADER_PURCHASE_ORDER		,
+		-- ============================
+		@PP_K_PO_TEMPORAL				,
+		-- ============================
+		@PP_K_STATUS_PO_ORIGINAL		,
+		(SELECT D_STATUS_PURCHASE_ORDER FROM STATUS_PURCHASE_ORDER (NOLOCK) WHERE	K_STATUS_PURCHASE_ORDER = @PP_K_STATUS_PO_ORIGINAL),
+		-- ============================
+		@PP_K_STATUS_PO_FINAL			,
+		(SELECT D_STATUS_PURCHASE_ORDER FROM STATUS_PURCHASE_ORDER (NOLOCK) WHERE	K_STATUS_PURCHASE_ORDER = @PP_K_STATUS_PO_FINAL),
+		-- ============================
+		@PP_K_USUARIO_ACCION			,
+		GETDATE()						)
+	IF @@ROWCOUNT = 0
 	BEGIN
-		SET		@VP_MENSAJE = 'No es posible [Insertar] el registro [COMMENT_HEADER_PURCHASE_ORDER]: ' + @VP_MENSAJE 
-	END
-	SELECT	@VP_MENSAJE AS MENSAJE, @PP_K_HEADER_PURCHASE_ORDER AS CLAVE
-	-- //////////////////////////////////////////////////////////////
+		--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+		SET @VP_MENSAJE='Registro no ingresado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+		RAISERROR (@VP_MENSAJE, 16, 1 ) 
+	END				
 GO
 
 
@@ -2178,8 +2232,9 @@ BEGIN TRY
 	AND		K_PO_TEMPORAL			= @PP_K_PO_TEMPORAL
 
 	IF @VP_STATUS_PO <> 13
+	BEGIN
 		RAISERROR ('No es posible modificar la [PO], Verifique...', 16, 1 )
-
+	END
 
 		UPDATE	HEADER_PURCHASE_ORDER
 		SET		
@@ -2207,6 +2262,11 @@ BEGIN TRY
 			SET @VP_MENSAJE='Los comentarios no fueron ingresados al LOG. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
 			RAISERROR (@VP_MENSAJE, 16, 1 ) 
 		END
+
+		EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+											-- ===========================
+											@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+											@VP_STATUS_PO				,	14
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY
@@ -2249,9 +2309,9 @@ DECLARE @VP_MENSAJE				VARCHAR(300) = ''
 DECLARE @VP_K_ESTATUS			INT
 BEGIN TRANSACTION 
 BEGIN TRY
-	SELECT	@VP_K_ESTATUS=K_STATUS_PURCHASE_ORDER
+	SELECT	@VP_K_ESTATUS			= K_STATUS_PURCHASE_ORDER
 	FROM	HEADER_PURCHASE_ORDER	(NOLOCK)
-	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
+	WHERE	K_HEADER_PURCHASE_ORDER	= @PP_K_HEADER_PURCHASE_ORDER
 	AND		K_PO_TEMPORAL=@PP_K_PO_TEMPORAL
 
 	-- /////////////////////////////////////////////////////////////////////
@@ -2268,10 +2328,17 @@ BEGIN TRY
 		WHERE	[K_HEADER_PURCHASE_ORDER]=@PP_K_HEADER_PURCHASE_ORDER
 		AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
 		IF @@ROWCOUNT = 0
-			BEGIN
-				SET @VP_MENSAJE='El ESTATUS no fue cambiado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
-				RAISERROR (@VP_MENSAJE, 16, 1 ) 
-			END
+		BEGIN
+			SET @VP_MENSAJE='El ESTATUS no fue cambiado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+			RAISERROR (@VP_MENSAJE, 16, 1 ) 
+		END
+
+		EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+											-- ===========================
+											@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+											@VP_K_ESTATUS				,	0
+
+		EXECUTE [PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @PP_K_HEADER_PURCHASE_ORDER,	1
 	END
 	ELSE
 	BEGIN
@@ -2341,18 +2408,18 @@ BEGIN TRY
 	DECLARE @VP_VALOR_QTY_PE	VARCHAR(500)
 	DECLARE @VP_VALOR_QTY_PN	VARCHAR(500)
 	-----=====================================================
-	SELECT	@VP_STATUS_PO_IN_BD=K_STATUS_PURCHASE_ORDER,
-			@VP_DATE_PROMISE=F_PROMISE_PURCHASE_ORDER
+	SELECT	@VP_STATUS_PO_IN_BD			= K_STATUS_PURCHASE_ORDER,
+			@VP_DATE_PROMISE			= F_PROMISE_PURCHASE_ORDER
 	FROM	HEADER_PURCHASE_ORDER		(NOLOCK)
-	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
+	WHERE	K_HEADER_PURCHASE_ORDER		= @PP_K_HEADER_PURCHASE_ORDER
+	AND		[K_PO_TEMPORAL]				= @PP_K_PO_TEMPORAL
 
 	IF @VP_DATE_PROMISE IS NULL
 	BEGIN
 		SET	@VP_DATE_PROMISE = @PP_F_INIT
 	END
 
-	IF @VP_STATUS_PO_IN_BD<>@PP_K_STATUS_PO
+	IF @VP_STATUS_PO_IN_BD <> @PP_K_STATUS_PO
 	BEGIN
 		SET @VP_MENSAJE='Estatus de la orden no válido para realizar la acción, verifica. [ESTATUS_IN_BD# '+CONVERT(VARCHAR(10),@VP_STATUS_PO_IN_BD)+']'
 		RAISERROR (@VP_MENSAJE, 16, 1 ) 
@@ -2457,10 +2524,10 @@ BEGIN TRY
 -- ///////////////////////////////////////////
 	DECLARE @VP_SUMA_PENDIENTES		DECIMAL(16,4)	= -1
 
-SELECT	@VP_SUMA_PENDIENTES=SUM(QUANTITY_PENDING)
+SELECT	@VP_SUMA_PENDIENTES			= SUM(QUANTITY_PENDING)
 FROM	DETAILS_PURCHASE_ORDER		(NOLOCK)
-WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
+WHERE	K_HEADER_PURCHASE_ORDER		= @PP_K_HEADER_PURCHASE_ORDER
+AND		[K_PO_TEMPORAL]				= @PP_K_PO_TEMPORAL
 
 	IF @VP_SUMA_PENDIENTES IS NULL	OR	@VP_SUMA_PENDIENTES=-1
 	BEGIN
@@ -2481,6 +2548,11 @@ AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
 			SET @VP_MENSAJE='El STATUS(12) no fue actualizado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
 			RAISERROR (@VP_MENSAJE, 16, 1 ) 
 		END
+
+		EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+											-- ===========================
+											@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+											@PP_K_STATUS_PO				,	12
 	END
 	ELSE
 	BEGIN
@@ -2495,6 +2567,11 @@ AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
 			SET @VP_MENSAJE='El STATUS(13) no fue actualizado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
 			RAISERROR (@VP_MENSAJE, 16, 1 ) 
 		END
+
+		EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+											-- ===========================
+											@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+											@PP_K_STATUS_PO				,	13
 	END
 -- ///////////////////////////////////////////
 
@@ -2564,43 +2641,42 @@ BEGIN TRY
 			-- PRIMERO SE VERIFICA QUE TENGA VALOR LA PO. Y QUE SE ENCUENTRE ACTIVA EN LAS PO
 			IF @VP_VALOR_PO<>''
 			BEGIN
-				SELECT	@VP_ESTATUS_PO=K_STATUS_PURCHASE_ORDER
+				SELECT	@VP_ESTATUS_PO				= K_STATUS_PURCHASE_ORDER
 				FROM	HEADER_PURCHASE_ORDER		(NOLOCK)
-				WHERE	K_HEADER_PURCHASE_ORDER=@VP_VALOR_PO
-				AND		K_PO_TEMPORAL=@VP_VALOR_TM
-				AND		K_STATUS_PURCHASE_ORDER IN (11)
-				AND		L_BORRADO<>1
-
+				WHERE	K_HEADER_PURCHASE_ORDER		= @VP_VALOR_PO
+				AND		K_PO_TEMPORAL				= @VP_VALOR_TM
+				AND		K_STATUS_PURCHASE_ORDER		IN (11)
+				AND		L_BORRADO					<> 1
 				IF @@ROWCOUNT = 0
-						BEGIN
-							SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no se encuentra activa Verifique...'
-							RAISERROR (@VP_MENSAJE, 16, 1 ) 
-						END			
+				BEGIN
+					SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no se encuentra activa Verifique...'
+					RAISERROR (@VP_MENSAJE, 16, 1 ) 
+				END			
 			END
 
 			--SE IDENTIFICA EL ESTATUS EN EL QUE SE ENCUENTRA Y SE PROCEDE A ACTUALIZAR.
-			IF @VP_MENSAJE=''
+			IF @VP_ESTATUS_PO IN (11)
 			BEGIN
-				IF @VP_ESTATUS_PO IN (11)
+				--DECLARE @VP_SIGUIENTE_STATUS INT=1
+				--SET @VP_SIGUIENTE_STATUS += @VP_ESTATUS_PO + @PP_K_PO_APROBADA
+		
+				UPDATE HEADER_PURCHASE_ORDER
+				SET		F_PROMISE_PURCHASE_ORDER	= @PP_F_RECEIVED
+						--K_STATUS_PURCHASE_ORDER=@VP_SIGUIENTE_STATUS
+				WHERE	K_HEADER_PURCHASE_ORDER		= @VP_VALOR_PO
+				AND		K_PO_TEMPORAL				= @VP_VALOR_TM
+				AND		L_BORRADO					<> 1
+				IF @@ROWCOUNT = 0
 				BEGIN
-					--DECLARE @VP_SIGUIENTE_STATUS INT=1
-					--SET @VP_SIGUIENTE_STATUS += @VP_ESTATUS_PO + @PP_K_PO_APROBADA
-			
-					UPDATE HEADER_PURCHASE_ORDER
-					SET
-							F_PROMISE_PURCHASE_ORDER=@PP_F_RECEIVED
-							--K_STATUS_PURCHASE_ORDER=@VP_SIGUIENTE_STATUS
-					WHERE	K_HEADER_PURCHASE_ORDER=@VP_VALOR_PO
-					AND		K_PO_TEMPORAL=@VP_VALOR_TM
-					AND		L_BORRADO<>1
-
-						IF @@ROWCOUNT = 0
-						BEGIN
-							--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-							SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no fue actualizada...'
-							RAISERROR (@VP_MENSAJE, 16, 1 ) 
-						END													
+					--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+					SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no fue actualizada...'
+					RAISERROR (@VP_MENSAJE, 16, 1 ) 
 				END
+
+				EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+													-- ===========================
+													@VP_VALOR_PO				,	@VP_VALOR_TM				,
+													@VP_ESTATUS_PO				,	11
 			END
 			--Reemplazamos lo procesado con nada con la funcion stuff
 			SELECT @PP_PO_ARRAY		= STUFF(@PP_PO_ARRAY		, 1, @VP_POSICION_PO , '')
@@ -2650,12 +2726,12 @@ DECLARE	@VP_L_IS_BLANKET	INT
 -- /////////////////////////////////////////////////////////////////////
 BEGIN TRANSACTION 
 BEGIN TRY
-	SELECT	@VP_ESTATUS_PO=K_STATUS_PURCHASE_ORDER,
-			@VP_L_IS_BLANKET=L_IS_BLANKET
+	SELECT	@VP_ESTATUS_PO				= K_STATUS_PURCHASE_ORDER,
+			@VP_L_IS_BLANKET			= L_IS_BLANKET
 	FROM	HEADER_PURCHASE_ORDER		(NOLOCK)
-	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-	AND		L_BORRADO<>1
+	WHERE	K_HEADER_PURCHASE_ORDER		= @PP_K_HEADER_PURCHASE_ORDER
+	AND		[K_PO_TEMPORAL]				= @PP_K_PO_TEMPORAL
+	AND		L_BORRADO					<> 1
 	IF @@ROWCOUNT = 0
 	BEGIN
 		SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+'] no fue encontrada, verifique...'
@@ -2664,13 +2740,18 @@ BEGIN TRY
 
 	IF	@VP_ESTATUS_PO NOT IN (1,3,5,8)
 	BEGIN
-		SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+'] se enceuntra en Revisión o Autorización.'
+		SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+'] se encuentra en Revisión o Autorización.'
 		RAISERROR (@VP_MENSAJE, 16, 1 )
 	END
 	ELSE IF @VP_ESTATUS_PO IN (1,3,5,8)
 	BEGIN
-		SET	@VP_ESTATUS_PO = 2
+		--SET	@VP_ESTATUS_PO = 2
 		GOTO UPDATE_PO
+	END
+	ELSE
+	BEGIN
+		SET @VP_MENSAJE='El estatus de la [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+'] NO permite realizar la acción.'
+		RAISERROR (@VP_MENSAJE, 16, 1 )
 	END
 
 UPDATE_PO:
@@ -2681,17 +2762,20 @@ UPDATE_PO:
 	END
 
 	UPDATE HEADER_PURCHASE_ORDER
-	SET
-			K_STATUS_PURCHASE_ORDER=@VP_ESTATUS_PO,
-			K_STATUS_PAID_ORDER=@VP_K_STATUS_PAID_ORDER
-	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-
+	SET		K_STATUS_PURCHASE_ORDER			= 2,--@VP_ESTATUS_PO,
+			K_STATUS_PAID_ORDER				= @VP_K_STATUS_PAID_ORDER
+	WHERE	K_HEADER_PURCHASE_ORDER			= @PP_K_HEADER_PURCHASE_ORDER
+	AND		[K_PO_TEMPORAL]					= @PP_K_PO_TEMPORAL
 	IF @@ROWCOUNT = 0
 	BEGIN
 		SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+'] no fue actualizada...'
 		RAISERROR (@VP_MENSAJE, 16, 1 ) 
-	END		
+	END
+
+	EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+										-- ===========================
+										@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+										@VP_ESTATUS_PO				,	2
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY
@@ -2778,7 +2862,7 @@ BEGIN TRY
 			IF @VP_ESTATUS_PO >= 10
 			BEGIN
 				SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] No fue actualizada. Estatus no válido para realizar la acción, verifique...'
-				RAISERROR (@VP_MENSAJE, 16, 1 ) 					
+				RAISERROR (@VP_MENSAJE, 16, 1 )
 			END
 			ELSE IF @VP_ESTATUS_PO IN (2,4,7)		-- AX: 20210106  SE ACTUALIZA, AL ENVIAR A REVISIÓN AL ÁREA DE FINANZAS SE ACTUALIZARÁ LA FECHA DE LA PO, SOLICITUD REALIZADA POR FINANZAS.
 			BEGIN
@@ -2787,45 +2871,56 @@ BEGIN TRY
 			
 				IF @VP_SIGUIENTE_STATUS = 4
 				BEGIN
-					UPDATE HEADER_PURCHASE_ORDER
-					SET
-							[K_STATUS_PURCHASE_ORDER]			= @VP_SIGUIENTE_STATUS
+					UPDATE	HEADER_PURCHASE_ORDER
+					SET		 [K_STATUS_PURCHASE_ORDER]			= @VP_SIGUIENTE_STATUS
 							,[F_DATE_PURCHASE_ORDER]			= GETDATE()
 							,[F_REQUIRED_PURCHASE_ORDER]		= GETDATE()
-					WHERE	K_HEADER_PURCHASE_ORDER=@VP_VALOR_PO
-					AND		[K_PO_TEMPORAL]=@VP_VALOR_TM
-					AND		L_BORRADO<>1
+					WHERE	K_HEADER_PURCHASE_ORDER				= @VP_VALOR_PO
+					AND		[K_PO_TEMPORAL]						= @VP_VALOR_TM
+					AND		L_BORRADO							<> 1
+					IF @@ROWCOUNT = 0
+					BEGIN
+						SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no fue actualizada...'
+						RAISERROR (@VP_MENSAJE, 16, 1 )
+					END
 				END
 				ELSE
 				BEGIN
-					UPDATE HEADER_PURCHASE_ORDER
-					SET
-							K_STATUS_PURCHASE_ORDER=@VP_SIGUIENTE_STATUS
-					WHERE	K_HEADER_PURCHASE_ORDER=@VP_VALOR_PO
-					AND		[K_PO_TEMPORAL]=@VP_VALOR_TM
-					AND		L_BORRADO<>1
+					UPDATE	HEADER_PURCHASE_ORDER
+					SET		K_STATUS_PURCHASE_ORDER				= @VP_SIGUIENTE_STATUS
+					WHERE	K_HEADER_PURCHASE_ORDER				= @VP_VALOR_PO
+					AND		[K_PO_TEMPORAL]						= @VP_VALOR_TM
+					AND		L_BORRADO							<> 1
+					IF @@ROWCOUNT = 0
+					BEGIN
+						SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no fue actualizada...'
+						RAISERROR (@VP_MENSAJE, 16, 1 )
+					END
 				END
 
-				IF @@ROWCOUNT = 0
-				BEGIN
-					SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@VP_VALOR_PO)+'] no fue actualizada...'
-					RAISERROR (@VP_MENSAJE, 16, 1 ) 
-				END			
+				EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+													-- ===========================
+													@VP_VALOR_PO				,	@VP_VALOR_TM				,
+													@VP_ESTATUS_PO				,	@VP_SIGUIENTE_STATUS
 			END
 
-			-- SI EL ESTATUS SE ENCUENTRA EN (9) QUE ES APROBADO POR GERENCIA DE PLANTA, 
-			-- SE ENVIA EL CORREO AL DEPARTAMENTO DE FINANZAS Y AL USUARIO QUE GENERÓ
-			-- SE ENVIA CORREO O NOTIFICACIÓN SEGÚN APLIQUE.
-			IF @VP_SIGUIENTE_STATUS = 9
-			BEGIN
 				DECLARE @VP_PO_INT INT;
 				DECLARE @VP_TM_INT INT;
 				SET @VP_PO_INT = CAST(@VP_VALOR_PO AS INT)
 				SET @VP_TM_INT = CAST(@VP_VALOR_TM AS INT)
 
-				EXECUTE [PG_PR_ENVIAR_CORREO_FINANZAS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
-				
-				EXECUTE [PG_PR_ENVIAR_CORREO_USUARIOS]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
+			-- SI EL ESTATUS SE ENCUENTRA EN (9) QUE ES APROBADO POR GERENCIA DE PLANTA,
+			-- SE ENVIA EL CORREO AL DEPARTAMENTO DE FINANZAS Y AL USUARIO QUE GENERÓ
+			-- SE ENVIA CORREO O NOTIFICACIÓN SEGÚN APLIQUE.
+			IF @VP_SIGUIENTE_STATUS = 9
+			BEGIN
+				EXECUTE [PG_PR_ENVIAR_CORREO_FINANZAS]				@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
+
+				EXECUTE [PG_PR_ENVIAR_CORREO_USUARIOS]				@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT
+			END
+			ELSE IF @VP_SIGUIENTE_STATUS IN (3,5,8)
+			BEGIN
+				EXECUTE [PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]	@PP_K_SISTEMA_EXE, @PP_K_USUARIO_ACCION, @VP_PO_INT, 0
 			END
 
 			--Reemplazamos lo procesado con nada con la funcion stuff
@@ -3004,8 +3099,90 @@ GO
 
 
 -- //////////////////////////////////////////////////////////////
+-- // STORED PROCEDURE ---> ENVIAR CORREO
+-- // CUANDO LA ORDEN DE COMPRA ES APROBADA POR GERENCIA DE PLANTA SE HACE EL ENVIO DE LA [PO] POR MEDIO ELECTRONICO.
+-- //////////////////////////////////////////////////////////////
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]') AND type in (N'P', N'PC'))
+	DROP PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]
+GO
+--		 EXECUTE [dbo].[PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]	0,139,  2
+CREATE PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]
+	@PP_K_SISTEMA_EXE				INT,
+	@PP_K_USUARIO_ACCION			INT,
+	-- ===========================
+	@PP_VALOR_PO					INT,
+	@PP_CANCELADA					INT = 0
+AS
+	BEGIN
+		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
+		DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
+--		DECLARE @VP_PO_INT INT;
+		DECLARE @VP_SUBJECT NVARCHAR(MAX) ;
+		DECLARE @VP_BODY_HTML  NVARCHAR(MAX) ;
+		DECLARE @VP_ID_MAIL INT;
+		DECLARE @VP_SENT_STATUS VARCHAR(500);
+		----================================================================				
+		----================================================================
+		-- CUANDO SE PONGA EN PRODUCTIVO SE DEBE QUITAR EL COMENTARIO A ESTA LÍNEA
+		-- PARA QUE SE ENVIE A TODOS LOS CONTACTOS.					
+		--	SELECT  @VP_RECIPIENTS	=	@VP_RECIPIENTS + ';' + EMAIL_1 + ';' + EMAIL_2
+		--								FROM	COMPRAS.dbo.VENDOR
+		--								WHERE   K_VENDOR = @VP_K_VENDOR
+		----================================================================
+		--IF @PP_K_SISTEMA_EXE=1
+		--BEGIN
+			-- USUARIO DEFAULT DE COMPRAS A DONDE SE ENVIARÁ EL CORREO.
+			--SET @VP_RECIPIENTS = 'FABIOLAG@PEARLLEATHER.COM.MX'						
+			SET @VP_RECIPIENTS = 'ALEJANDROD@PEARLLEATHER.COM.MX'						
+		--END
+			--SET @VP_FILE_PATH = '\\10.1.1.5\documents\Common\COMPRAS\REPORTES\PO_'+ CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +'.PDF'  		
+			SET @VP_SUBJECT = 'PEARL LEATHER CANC-RECH[PO#' + CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +']'--CONVERT(VARCHAR(10),FORMAT(@VP_VALOR_PO,'000000'))+']'					
+
+		IF @PP_CANCELADA	= 0
+		BEGIN
+			SET @VP_BODY_HTML =  
+			N'<p style="color:black; font-size:12.0pt;font-family:"Calisto MT",serif">'+
+			N'Buen día, <br><br>'+
+			N'La PO indicada en el asunto del presente correo fue RECHAZADA en algún punto del proceso, es necesario poner atención para futuras referencias.<br>'
+		END
+		ELSE
+		BEGIN
+			SET @VP_BODY_HTML =  
+			N'<p style="color:black; font-size:12.0pt;font-family:"Calisto MT",serif">'+
+			N'Buen día, <br><br>'+
+			N'La PO indicada en el asunto del presente correo CANCELADA en algún punto del proceso, es necesario poner atención para futuras referencias.<br>'
+		END
+		--N'Favor de confirmar de recibido y fecha de entrega estimada.<br><br>'+
+		--N'Saludos.<br> == = == = == = == = == = == = == = == = == = == = == = == = == = == = ==<br>'+
+		--N'Good day, <br><br>'+
+		--N'Purchase order is sent, please track it for delivery.<br>'+
+		--N'Please confirm receipt and estimated delivery date.<br><br>'+
+		--N'Regards.<br> </p> <p>'+
+
+		--N'<p><span style="color:maroon; font-size:12.0pt"><b>Fabiola Gerardo Arévalo | Compras</b></span><br>'+
+		--N'<span style="color:lightpink; font-size:11pt"><b>Dirección:</b></span>'+
+		--N'<span style="color:lightpink; font-size:11pt">Av. Rosa Maria Y. Fuentes 7050-A <b>|C.P.</b> 32320</span></br>'+
+		--N'<span style="color:lightpink; font-size:11pt"><b>Tel.</b>656-892-5800<b>|Ext:</b>121'+
+		--N'<b>|Cel.</b> 656-103-4020<o:p></o:p></span><br><br></p>'+
+		--N'<p><span style="color:maroon; font-size:11pt"><b><u>RECEPCION DE MATERIAL <b>|</b> RECEIPT OF MATERIAL</u></b></span></p>'+
+		--N'<p><span style="color:maroon; font-size: 8pt"><b>Lunes a Viernes | Monday to Friday: 7am -9am, 10am -2pm y 4pm -5:30pm</b></span></p>'
+		
+		EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
+--		@copy_recipients		= 'ALEJANDROD@PEARLLEATHER.COM.MX',
+--		@blind_copy_recipients	= 'ALEJANDROD@PEARLLEATHER.COM.MX',
+		@subject				= @VP_SUBJECT,
+		@body					= @VP_BODY_HTML,
+		@body_format			= 'HTML',
+--		@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
+		@mailitem_id = @VP_ID_MAIL OUTPUT;
+	END
+GO
+
+
+
+-- //////////////////////////////////////////////////////////////
 -- // STORED PROCEDURE ---> UPDATE / PO
--- // PARA ACTUALIZAR EL ESTATUS DE LA PO DESDE LA PANTALL DE USUARIO QUE LA GENERA
+-- // PARA ACTUALIZAR EL ESTATUS DE LA PO DESDE LA PANTALLA DE USUARIO QUE LA GENERA
 -- //////////////////////////////////////////////////////////////
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_UP_ESTATUS_PO_SEND_PRINT]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_UP_ESTATUS_PO_SEND_PRINT]
@@ -3030,19 +3207,18 @@ BEGIN TRANSACTION
 BEGIN TRY
 	-- SE OBTIENE EL ESTATUS ORIGINAL PARA PODER REALIZAR LAS ACTUALIZACIONES DEL ESTATUS
 	-- ADEMAS DE SABER SI ES BLANKET O NO.
-	SELECT	@VP_ESTATUS_PO_ORIGI=K_STATUS_PURCHASE_ORDER,
-			@VP_L_IS_BLANKET=L_IS_BLANKET
+	SELECT	@VP_ESTATUS_PO_ORIGI	=	K_STATUS_PURCHASE_ORDER,
+			@VP_L_IS_BLANKET		=	L_IS_BLANKET
 	FROM	HEADER_PURCHASE_ORDER	(NOLOCK)
-	WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-	AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-	AND		L_BORRADO<>1
-
+	WHERE	K_HEADER_PURCHASE_ORDER	=	@PP_K_HEADER_PURCHASE_ORDER
+	AND		[K_PO_TEMPORAL]			=	@PP_K_PO_TEMPORAL
+	AND		L_BORRADO				<>	1
 	IF @@ROWCOUNT = 0
-		BEGIN
-			--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-			SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se encuentra disponible...'
-			RAISERROR (@VP_MENSAJE, 16, 1 ) 
-		END			
+	BEGIN
+		--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+		SET @VP_MENSAJE='La [PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se encuentra disponible...'
+		RAISERROR (@VP_MENSAJE, 16, 1 ) 
+	END			
 
 	-- SE VERIFICA SI EL ESTATUS ESTA EN 6 ó 7 PARA PODER IMPRIMIR EL REPORTE, EN CASO CONTRARIO LO RECHAZA.
 	IF	@VP_ESTATUS_PO_ORIGI NOT IN (6,7,11)
@@ -3060,124 +3236,120 @@ BEGIN TRY
 
 	-- SI EL ESTATUS ES 6 Y EL K_PO ES DIFERENTE DE 0, ES PORQUE SE CAMBIO EL ESTATUS PERO NO SE IMPRIMIÓ.
 	IF @VP_ESTATUS_PO_ORIGI=6 AND @PP_K_HEADER_PURCHASE_ORDER<>0
-		BEGIN
-			----================================================================
-				--  SE ACTUALIZA EL REGISTRO PRINCIPAL DE LA ORDEN DE COMPRA.
-				UPDATE	HEADER_PURCHASE_ORDER
-				SET		
-						K_STATUS_PURCHASE_ORDER =	@VP_ESTATUS_PO_FINAL
-				WHERE	K_HEADER_PURCHASE_ORDER=	@PP_K_HEADER_PURCHASE_ORDER
-				AND		[K_PO_TEMPORAL]=	@PP_K_PO_TEMPORAL
+	BEGIN
+		----================================================================
+			--  SE ACTUALIZA EL REGISTRO PRINCIPAL DE LA ORDEN DE COMPRA.
+			UPDATE	HEADER_PURCHASE_ORDER
+			SET		K_STATUS_PURCHASE_ORDER =	@VP_ESTATUS_PO_FINAL
+			WHERE	K_HEADER_PURCHASE_ORDER=	@PP_K_HEADER_PURCHASE_ORDER
+			AND		[K_PO_TEMPORAL]=	@PP_K_PO_TEMPORAL
 
-					IF @@ROWCOUNT = 0
-						BEGIN
-							--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-							SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no fue posible actualizar STATUS_PRINT & PO<>0'
-							RAISERROR (@VP_MENSAJE, 16, 1 ) 
-						END
+				IF @@ROWCOUNT = 0
+					BEGIN
+						--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+						SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no fue posible actualizar STATUS_PRINT & PO<>0'
+						RAISERROR (@VP_MENSAJE, 16, 1 ) 
+					END
 
-				SET @PP_VP_K_LIVE= @PP_K_HEADER_PURCHASE_ORDER
-				----================================================================			
-		END
-	ELSE IF @VP_ESTATUS_PO_ORIGI=6 AND @PP_K_HEADER_PURCHASE_ORDER=0
-		BEGIN
-			--	AQUI SE DEBE CAMBIAR LA K_DE LA PO Y DEJAR LA K QUE SERA LA PRODUCTIVA Y LA TEMPORAL DEBE REGRESAR A 0
-			DECLARE @PP_VP_ULTIMO_REGISTRO INT		
-
-			-- SE OBTIENE LA ULTIMA K_INSERTADA PARA ASIGNAR LA DISPONIBLE
-			SELECT	TOP (1) @PP_VP_ULTIMO_REGISTRO= K_HEADER_PURCHASE_ORDER
-			FROM	HEADER_PURCHASE_ORDER	(NOLOCK)
-			ORDER BY K_HEADER_PURCHASE_ORDER DESC
-			
-			SET @PP_VP_K_LIVE = @PP_VP_ULTIMO_REGISTRO + 1
-				----================================================================
-				--  SE ACTUALIZA EL REGISTRO PRINCIPAL DE LA ORDEN DE COMPRA.
-				UPDATE HEADER_PURCHASE_ORDER
-				SET		
-						K_STATUS_PURCHASE_ORDER =	@VP_ESTATUS_PO_FINAL,
-						
-						K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
-						[K_PO_TEMPORAL]			=	0
-				
-				WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-				AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-
-					IF @@ROWCOUNT = 0
-						BEGIN
-							--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-							SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se asignó un ID permanente al registro...'
-							RAISERROR (@VP_MENSAJE, 16, 1 ) 
-						END
-				----================================================================
-				----================================================================
-				-- SE ACTUALIZAN LOS DETALLES DE LA ORDEN DE COMPRA.
-				UPDATE [DETAILS_PURCHASE_ORDER]
-				SET								
-						K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
-						[K_PO_TEMPORAL]			=	0				
-				
-				WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-				AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-
-					IF @@ROWCOUNT = 0
-						BEGIN
-							--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-							SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se actualizaron los detalles de la orden...'
-							RAISERROR (@VP_MENSAJE, 16, 1 ) 
-						END
-				----================================================================
-				----================================================================
-				-- SE ACTUALIZAN LOS DETALLES DE LA BLANKET_PO
-				IF @VP_L_IS_BLANKET=1
-				BEGIN
-					UPDATE [DETAILS_BLANKET_PURCHASE_ORDER]
-					SET								
-							K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
-							[K_PO_TEMPORAL]			=	0				
-					
-					WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-					AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-
-						IF @@ROWCOUNT = 0
-							BEGIN
-								--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-								SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se actualizaron los detalles de la orden BLANKET...'
-								RAISERROR (@VP_MENSAJE, 16, 1 ) 
-							END
-				END
-				----================================================================
-				----================================================================
-				-- SE ACTUALIZA EL LOG DE COMENTARIOS
-				UPDATE [PO_COMENTARIO_LOG]
-				SET								
-						K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
-						[K_PO_TEMPORAL]			=	0				
-				
-				WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
-				AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
-
-				----================================================================
-				----================================================================
-				-- SE ACTUALIZA EL VALOR DE LAS K_TEMPORALES Y SE VUELVE A PONER DISPONIBLE EL ID.
-	
-				UPDATE [HEADER_PURCHASE_ORDER_TEMP]
-				SET								
-						L_EN_USO =	0
-				WHERE [K_HEADER_PURCHASE_ORDER_TEMP]=@PP_K_PO_TEMPORAL
-				
-					IF @@ROWCOUNT = 0
-						BEGIN
-							--RAISERROR (@VP_ERROR_1, 16, 1 ) 
-							SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se actualizó la tabla de ID_TEMP.'
-							RAISERROR (@VP_MENSAJE, 16, 1 ) 
-						END		
-				----================================================================		
-				SET @PP_K_PO_TEMPORAL=0
-		END
-	ELSE
-		BEGIN
 			SET @PP_VP_K_LIVE= @PP_K_HEADER_PURCHASE_ORDER
-		END
+			----================================================================
+			EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+												-- ===========================
+												@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+												@VP_ESTATUS_PO_ORIGI		,	@VP_ESTATUS_PO_FINAL
+
+	END
+	ELSE IF @VP_ESTATUS_PO_ORIGI=6 AND @PP_K_HEADER_PURCHASE_ORDER=0
+	BEGIN
+		--	AQUI SE DEBE CAMBIAR LA K_DE LA PO Y DEJAR LA K QUE SERA LA PRODUCTIVA Y LA TEMPORAL DEBE REGRESAR A 0
+		DECLARE @PP_VP_ULTIMO_REGISTRO INT		
+
+		-- SE OBTIENE LA ULTIMA K_INSERTADA PARA ASIGNAR LA DISPONIBLE
+		SELECT	TOP (1) @PP_VP_ULTIMO_REGISTRO	= K_HEADER_PURCHASE_ORDER
+		FROM		HEADER_PURCHASE_ORDER	(NOLOCK)
+		ORDER	BY	K_HEADER_PURCHASE_ORDER DESC
+		
+		SET @PP_VP_K_LIVE = @PP_VP_ULTIMO_REGISTRO + 1
+			----================================================================
+			--  SE ACTUALIZA EL REGISTRO PRINCIPAL DE LA ORDEN DE COMPRA.
+			UPDATE HEADER_PURCHASE_ORDER
+			SET		K_STATUS_PURCHASE_ORDER		=	@VP_ESTATUS_PO_FINAL,					
+					K_HEADER_PURCHASE_ORDER		=	@PP_VP_K_LIVE,
+					[K_PO_TEMPORAL]				=	0			
+			WHERE	K_HEADER_PURCHASE_ORDER		=	@PP_K_HEADER_PURCHASE_ORDER
+			AND		[K_PO_TEMPORAL]				=	@PP_K_PO_TEMPORAL
+			IF @@ROWCOUNT = 0
+			BEGIN
+				--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+				SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se asignó un ID permanente al registro...'
+				RAISERROR (@VP_MENSAJE, 16, 1 ) 
+			END
+			----================================================================
+			----================================================================
+			EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+												-- ===========================
+												@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+												@VP_ESTATUS_PO_ORIGI		,	@VP_ESTATUS_PO_FINAL
+			----================================================================
+			----================================================================
+			-- SE ACTUALIZAN LOS DETALLES DE LA ORDEN DE COMPRA.
+			UPDATE [DETAILS_PURCHASE_ORDER]
+			SET		K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
+					[K_PO_TEMPORAL]			=	0
+			WHERE	K_HEADER_PURCHASE_ORDER	=	@PP_K_HEADER_PURCHASE_ORDER
+			AND		[K_PO_TEMPORAL]			=	@PP_K_PO_TEMPORAL
+			IF @@ROWCOUNT = 0
+			BEGIN
+				--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+				SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se actualizaron los detalles de la orden...'
+				RAISERROR (@VP_MENSAJE, 16, 1 ) 
+			END
+			----================================================================
+			----================================================================
+			-- SE ACTUALIZAN LOS DETALLES DE LA BLANKET_PO
+			IF @VP_L_IS_BLANKET=1
+			BEGIN
+				UPDATE [DETAILS_BLANKET_PURCHASE_ORDER]
+				SET		K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
+						[K_PO_TEMPORAL]			=	0				
+				WHERE	K_HEADER_PURCHASE_ORDER	=	@PP_K_HEADER_PURCHASE_ORDER
+				AND		[K_PO_TEMPORAL]			=	@PP_K_PO_TEMPORAL
+				IF @@ROWCOUNT = 0
+				BEGIN
+					--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+					SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se actualizaron los detalles de la orden BLANKET...'
+					RAISERROR (@VP_MENSAJE, 16, 1 ) 
+				END
+			END
+			----================================================================
+			----================================================================
+			-- SE ACTUALIZA EL LOG DE COMENTARIOS
+			UPDATE [PO_COMENTARIO_LOG]
+			SET		K_HEADER_PURCHASE_ORDER =	@PP_VP_K_LIVE,
+					[K_PO_TEMPORAL]			=	0
+			WHERE	K_HEADER_PURCHASE_ORDER	=	@PP_K_HEADER_PURCHASE_ORDER
+			AND		[K_PO_TEMPORAL]			=	@PP_K_PO_TEMPORAL
+
+			----================================================================
+			----================================================================
+			-- SE ACTUALIZA EL VALOR DE LAS K_TEMPORALES Y SE VUELVE A PONER DISPONIBLE EL ID.
+	
+			UPDATE [HEADER_PURCHASE_ORDER_TEMP]
+			SET		L_EN_USO						=	0
+			WHERE [K_HEADER_PURCHASE_ORDER_TEMP]	=	@PP_K_PO_TEMPORAL
+			IF @@ROWCOUNT = 0
+			BEGIN
+				--RAISERROR (@VP_ERROR_1, 16, 1 ) 
+				SET @VP_MENSAJE='[PO#'+CONVERT(VARCHAR(10),@PP_K_PO_TEMPORAL)+'] no se actualizó la tabla de ID_TEMP.'
+				RAISERROR (@VP_MENSAJE, 16, 1 ) 
+			END		
+			----================================================================		
+			SET @PP_K_PO_TEMPORAL=0
+	END
+	ELSE
+	BEGIN
+		SET @PP_VP_K_LIVE= @PP_K_HEADER_PURCHASE_ORDER
+	END
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
 END TRY
@@ -3238,9 +3410,9 @@ BEGIN TRY
 		WHERE	K_HEADER_PURCHASE_ORDER=@PP_K_HEADER_PURCHASE_ORDER
 		AND		[K_PO_TEMPORAL]=@PP_K_PO_TEMPORAL
 		IF @@ROWCOUNT = 0
-			BEGIN
-				SET @VP_MENSAJE='La orden no puede ser eliminada. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
-			END
+		BEGIN
+			SET @VP_MENSAJE='La orden no puede ser eliminada. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
+		END
 	END
 -- /////////////////////////////////////////////////////////////////////
 COMMIT TRANSACTION 
@@ -3358,7 +3530,7 @@ BEGIN TRY
 			BEGIN
 				SET @VP_MENSAJE='El STATUS(11) no fue actualizado. [PO#'+CONVERT(VARCHAR(10),@PP_K_HEADER_PURCHASE_ORDER)+']'
 				RAISERROR (@VP_MENSAJE, 16, 1 ) 
-			END
+			END			
 		END
 		ELSE
 		BEGIN
@@ -3375,6 +3547,11 @@ BEGIN TRY
 				RAISERROR (@VP_MENSAJE, 16, 1 ) 
 			END
 		END
+
+		EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+											-- ===========================
+											@PP_K_HEADER_PURCHASE_ORDER	,	0							,
+											@VP_STATUS_PO_IN_BD			,	@VP_K_STATUS_FINAL
 	END
 	ELSE
 	BEGIN
