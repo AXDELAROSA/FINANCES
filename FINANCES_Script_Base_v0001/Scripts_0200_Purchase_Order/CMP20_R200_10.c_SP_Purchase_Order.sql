@@ -2846,8 +2846,8 @@ BEGIN TRY
 				SELECT	@VP_ESTATUS_PO	=	K_STATUS_PURCHASE_ORDER,
 						@VP_K_VENDOR	=	K_VENDOR
 				FROM	HEADER_PURCHASE_ORDER		(NOLOCK)
-				WHERE	K_HEADER_PURCHASE_ORDER=@VP_VALOR_PO
-				AND		[K_PO_TEMPORAL]=@VP_VALOR_TM
+				WHERE	K_HEADER_PURCHASE_ORDER	= @VP_VALOR_PO
+				AND		[K_PO_TEMPORAL]			= @VP_VALOR_TM
 				AND		K_STATUS_PURCHASE_ORDER IN (2,4,7)
 				AND		L_BORRADO<>1
 
@@ -2962,7 +2962,6 @@ CREATE PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]
 	-- ===========================
 	@PP_VALOR_PO					INT
 AS
-	BEGIN
 		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
 		DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
 --		DECLARE @VP_PO_INT INT;
@@ -2978,7 +2977,7 @@ AS
 		--								FROM	COMPRAS.dbo.VENDOR
 		--								WHERE   K_VENDOR = @VP_K_VENDOR
 		----================================================================
-		IF @PP_K_SISTEMA_EXE=1
+		IF @PP_K_SISTEMA_EXE	= 1
 		BEGIN
 			-- USUARIO DEFAULT DE COMPRAS A DONDE SE ENVIARÁ EL CORREO.
 			SET @VP_RECIPIENTS = 'FABIOLAG@PEARLLEATHER.COM.MX'						
@@ -3012,13 +3011,19 @@ AS
 		@subject = @VP_SUBJECT,
 		@body = @VP_BODY_HTML,  
 		@body_format = 'HTML', 
-		@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
-		@mailitem_id = @VP_ID_MAIL OUTPUT;
+		@file_attachments = @VP_FILE_PATH; --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
+		--@mailitem_id = @VP_ID_MAIL OUTPUT;
 
 			UPDATE	HEADER_PURCHASE_ORDER
-			SET		K_STATUS_PURCHASE_ORDER=11
-			WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
-	END
+			SET		K_STATUS_PURCHASE_ORDER	= 11
+			WHERE	K_HEADER_PURCHASE_ORDER	= @PP_VALOR_PO
+
+		EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
+											-- ===========================
+											@PP_VALOR_PO				,	0							,
+											--@VP_ESTATUS_PO				,	@VP_SIGUIENTE_STATUS
+											--'APPROVED'					,	'PENDING TO RECEIVE'
+											9								,	11
 GO
 
 
@@ -3041,10 +3046,10 @@ DECLARE @VP_ESTATUS_PO		INT
 -- /////////////////////////////////////////////////////////////////////
 	SELECT	@VP_ESTATUS_PO	=	K_STATUS_PURCHASE_ORDER
 	FROM	HEADER_PURCHASE_ORDER		(NOLOCK)
-	WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
+	WHERE	K_HEADER_PURCHASE_ORDER	= @PP_VALOR_PO
 	AND		L_BORRADO<>1
 	
-	IF @VP_ESTATUS_PO=11
+	IF @VP_ESTATUS_PO	= 11
 	BEGIN
 		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
 
@@ -3058,17 +3063,16 @@ DECLARE @VP_ESTATUS_PO		INT
 		--												   CORREO_USUARIO.CORREO_USUARIO_PEARL
 		
 		SELECT	@VP_RECIPIENTS	=	@VP_RECIPIENTS + ';' + CORREO_USUARIO.CORREO_USUARIO_PEARL
-		
 		FROM	HEADER_PURCHASE_ORDER			(NOLOCK)	
 		LEFT JOIN BD_GENERAL.DBO.USUARIO_PEARL	(NOLOCK)	AS CORREO_USUARIO ON HEADER_PURCHASE_ORDER.K_USUARIO_ALTA=CORREO_USUARIO.K_USUARIO_PEARL
 		--LEFT JOIN BD_GENERAL.DBO.USUARIO_PEARL	AS CORREO_GERENTE ON HEADER_PURCHASE_ORDER.K_APPROVED_BY =CORREO_GERENTE.K_EMPLEADO_PEARL
-		WHERE	K_HEADER_PURCHASE_ORDER=@PP_VALOR_PO
+		WHERE	K_HEADER_PURCHASE_ORDER	= @PP_VALOR_PO
 					
 		----================================================================
-		
-			IF LEN(@VP_RECIPIENTS)>5
-			BEGIN
-
+		SET @VP_RECIPIENTS = SUBSTRING(@VP_RECIPIENTS,2,LEN(@VP_RECIPIENTS))
+				
+			--IF LEN(@VP_RECIPIENTS)>5
+			--BEGIN
 				SET @VP_SUBJECT = '[PO#' + CONVERT(VARCHAR(10),FORMAT(@PP_VALOR_PO,'000000')) +'] APROBADA'
 				
 				SET @VP_BODY_HTML =
@@ -3083,16 +3087,15 @@ DECLARE @VP_ESTATUS_PO		INT
 				N'<b>|Cel.</b> 656-103-4020<o:p></o:p></span><br><br></p>'+
 				N'<p><span style="color:maroon; font-size:11pt"><b><u>RECEPCION DE MATERIAL <b>|</b> RECEIPT OF MATERIAL</u></b></span></p>'+
 				N'<p><span style="color:maroon; font-size: 8pt"><b>Lunes a Viernes | Monday to Friday: 7am -9am, 10am -2pm y 4pm -5:30pm</b></span></p>'
-
-
+									  
 					EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
-					--@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
+					@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
 					@subject = @VP_SUBJECT,
 					@body = @VP_BODY_HTML,  
-					@body_format = 'HTML',
-					@mailitem_id = @VP_ID_MAIL OUTPUT;
-			END
-		END
+					@body_format = 'HTML';
+					--@mailitem_id = @VP_ID_MAIL OUTPUT;
+			--END
+	END
 	-- ////////////////////////////////////////////////////////////////
 	-- ///////////////////////////////////////////////////////////////
 GO
@@ -3114,7 +3117,7 @@ CREATE PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_CANCELADA_RECHAZADA]
 	@PP_VALOR_TEMPORAL				INT,
 	@PP_CANCELADA					INT = 0
 AS
-	BEGIN
+--	BEGIN
 		DECLARE @VP_RECIPIENTS	NVARCHAR(MAX)	= '';
 		DECLARE @VP_FILE_PATH  NVARCHAR(MAX)	=''	;
 --		DECLARE @VP_PO_INT INT;
@@ -3173,10 +3176,10 @@ AS
 --		@blind_copy_recipients	= 'ALEJANDROD@PEARLLEATHER.COM.MX',
 		@subject				= @VP_SUBJECT,
 		@body					= @VP_BODY_HTML,
-		@body_format			= 'HTML',
+		@body_format			= 'HTML';
 --		@file_attachments = @VP_FILE_PATH, --EL ARCHIVO A ENVIAR DEBE ESTAR EN EL MISMO (SERVIDOR, EQUIPO) QUE SE TIENE INSTALADO EL SQLSERVER
-		@mailitem_id = @VP_ID_MAIL OUTPUT;
-	END
+		--@mailitem_id = @VP_ID_MAIL OUTPUT;
+--	END
 GO
 
 
@@ -3289,7 +3292,8 @@ BEGIN TRY
 			----================================================================
 			EXECUTE [dbo].[PG_IN_HEADER_LOG_PO]	@PP_K_SISTEMA_EXE			,	@PP_K_USUARIO_ACCION		,
 												-- ===========================
-												@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+												--@PP_K_HEADER_PURCHASE_ORDER	,	@PP_K_PO_TEMPORAL			,
+												@PP_VP_K_LIVE				,	@PP_K_PO_TEMPORAL			,
 												@VP_ESTATUS_PO_ORIGI		,	@VP_ESTATUS_PO_FINAL
 			----================================================================
 			----================================================================
