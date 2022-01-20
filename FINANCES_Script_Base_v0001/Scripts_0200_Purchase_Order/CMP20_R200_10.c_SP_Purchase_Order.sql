@@ -1113,9 +1113,9 @@ AS
 				-- =============================	
 	FROM		BD_GENERAL.DBO.GRUPO_APROBADOR	(NOLOCK)
 				-- =============================
-	WHERE		K_USUARIO=@PP_K_USUARIO_ACCION
-	AND			K_TIPO_GRUPO_APROBADOR=@PP_K_GRUPO_APROBADOR
-	AND			K_ESTATUS_GRUPO_APROBADOR=1
+	WHERE		K_USUARIO					= @PP_K_USUARIO_ACCION
+	AND			K_TIPO_GRUPO_APROBADOR		= @PP_K_GRUPO_APROBADOR
+	AND			K_ESTATUS_GRUPO_APROBADOR	= 1
 	-- ////////////////////////////////////////////////////////////////////
 GO
 
