@@ -2955,7 +2955,7 @@ GO
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]') AND type in (N'P', N'PC'))
 	DROP PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]
 GO
---		 EXECUTE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]	0,139,  2
+--		 EXECUTE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]	0,139,  2497
 CREATE PROCEDURE [dbo].[PG_PR_ENVIAR_CORREO_FINANZAS]
 	@PP_K_SISTEMA_EXE				INT,
 	@PP_K_USUARIO_ACCION			INT,
@@ -3007,7 +3007,8 @@ AS
 		
 		EXEC msdb.dbo.sp_send_dbmail @recipients=@VP_RECIPIENTS,
 --		@copy_recipients = 'ALEJANDROD@PEARLLEATHER.COM.MX',
-		@blind_copy_recipients='ALEJANDROD@PEARLLEATHER.COM.MX',
+		@profile_name			= 'DB Mail',
+		@blind_copy_recipients	='ALEJANDROD@PEARLLEATHER.COM.MX',
 		@subject = @VP_SUBJECT,
 		@body = @VP_BODY_HTML,  
 		@body_format = 'HTML', 
